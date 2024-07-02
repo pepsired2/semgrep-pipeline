@@ -12,7 +12,7 @@ from plotly.offline import plot
 
 EPOCH_TIME = str(int(time.time()))
 
-def assign_security_grade(high, medium, low):
+def assign_security_grade(critical, high, medium, low):
     """
     Assigns a security grade based on the number of high, medium, and low vulnerabilities.
 
@@ -31,7 +31,7 @@ def assign_security_grade(high, medium, low):
     elif high < 10 and medium < 50:
         return 'C'
     # Criteria for grade D
-    elif high < 25 and medium < 100:
+    elif (high < 25 and medium < 100) or critical > 0:
         return 'D'
     # If none of the above criteria are met, the security grade is considered to be below D.
     else:
@@ -41,29 +41,29 @@ def generate_table_rows(df):
     """
     Generates HTML table rows (<tr>) for a DataFrame, including a header row.
     Each 'Security Grade' cell gets colored based on its value, and certain columns are centered.
-    
+
     :param df: DataFrame with columns including 'Project Name', 'Security Grade', etc.
     :return: String with HTML content for table rows.
     """
     # Define headers
     headers = [
-        "Project", " ", "Security Grade", "  ", 
-        "Open-HIGH", "Open-MEDIUM", "Open-LOW", "   ", 
+        "Project", " ", "Security Grade", "  ", "Open-CRITICAL",
+        "Open-HIGH", "Open-MEDIUM", "Open-LOW", "   ", "Fixed-CRITICAL",
         "Fixed-HIGH", "Fixed-MEDIUM", "Fixed-LOW"
     ]
-    
+
     # Columns to center
-    center_columns = ["Security Grade", "Open-HIGH", "Open-MEDIUM", "Open-LOW", "Fixed-HIGH", "Fixed-MEDIUM", "Fixed-LOW"]
+    center_columns = ["Security Grade", "Open-CRITICAL", "Open-HIGH", "Open-MEDIUM", "Open-LOW", "Fixed-CRITICAL", "Fixed-HIGH", "Fixed-MEDIUM", "Fixed-LOW"]
 
     # Generate HTML for the header row with center-text class for specific headers
     header_html = "<tr>" + "".join([f'<th class="{"center-text" if header in center_columns else ""}">{header}</th>' for header in headers]) + "</tr>"
-    
+
     # Initialize HTML rows string with the header
     html_rows = header_html
-    
+
     for index, row in df.iterrows():
         security_grade = row['Security Grade']
-        
+
         # Determine class based on 'Security Grade'
         class_name = ""
         if security_grade == "A":
@@ -76,7 +76,7 @@ def generate_table_rows(df):
             class_name = "grade-D"
         elif security_grade == "F":
             class_name = "grade-F"
-        
+
         # Generate HTML for one row
         row_html = "<tr>"
         for col, header in zip(df.columns, headers):
@@ -85,12 +85,12 @@ def generate_table_rows(df):
                 cell_class += f" {class_name}"  # Add security grade class if applicable
             row_html += f'<td class="{cell_class.strip()}">{row[col]}</td>'
         row_html += "</tr>"
-        
+
         html_rows += row_html
     return html_rows
 
 def create_heatmap_vulnerability_classes(vulnerability_counts_all_repos, image_folder):
-    
+
     # Convert the list of dictionaries to a DataFrame
     df = pd.DataFrame({list(d.keys())[0]: list(d.values())[0] for d in vulnerability_counts_all_repos}).T.fillna(0)
 
@@ -105,11 +105,11 @@ def create_heatmap_vulnerability_classes(vulnerability_counts_all_repos, image_f
 
     # Custom Red-Amber-Green color scale
     rag_colorscale = [
-        [0.0, "green"],  
+        [0.0, "green"],
         [0.10, "green"],
         [0.10, "yellow"],
         [0.33, "yellow"],
-        [0.33, "red"],  
+        [0.33, "red"],
         [1.0, "red"]
     ]
 
@@ -138,7 +138,7 @@ def create_heatmap_vulnerability_classes(vulnerability_counts_all_repos, image_f
     fig.write_image(f"{image_folder}/heatmap_vulnerability_classes.png")
 
 def create_heatmap_owasp_top10_categories(owasp_top10_counts_all_repos, image_folder):
-    
+
     # Convert the list of dictionaries to a DataFrame
     df = pd.DataFrame({list(d.keys())[0]: list(d.values())[0] for d in owasp_top10_counts_all_repos}).T.fillna(0)
 
@@ -153,11 +153,11 @@ def create_heatmap_owasp_top10_categories(owasp_top10_counts_all_repos, image_fo
 
     # Custom Red-Amber-Green color scale
     rag_colorscale = [
-        [0.0, "green"],  
+        [0.0, "green"],
         [0.10, "green"],
         [0.10, "yellow"],
         [0.33, "yellow"],
-        [0.33, "red"],  
+        [0.33, "red"],
         [1.0, "red"]
     ]
 
@@ -194,6 +194,8 @@ def create_bar_graph_open_vulns(data, image_folder):
             row = {}
             row ['Project'] = project_name
             for severity, states in severities.items():
+                if (severity == 'critical'):
+                    row['critical'] = states['unresolved']
                 if (severity== 'high'):
                     row ['high'] = states['unresolved']
                 if (severity== 'medium'):
@@ -205,6 +207,7 @@ def create_bar_graph_open_vulns(data, image_folder):
 
     transformed_json = {
         'Project': [],
+        'critical': [],
         'high': [],
         'medium': [],
         'low': [],
@@ -220,7 +223,7 @@ def create_bar_graph_open_vulns(data, image_folder):
             transformed_json[key].append(item[key])
 
     logging.debug(transformed_json)
-    
+
     # Create a DataFrame from the rows
     df = pd.DataFrame(rows)
 
@@ -230,21 +233,22 @@ def create_bar_graph_open_vulns(data, image_folder):
     df = df.sort_values(by='high', ascending=False).head(15)
 
     # Melting the DataFrame to long format, which Plotly can use to differentiate subcolumns
-    df_long = pd.melt(df, id_vars='Project', value_vars=['high', 'medium', 'low'], 
+    df_long = pd.melt(df, id_vars='Project', value_vars=['critical', 'high', 'medium', 'low'],
                     var_name='Severity', value_name='Value')
 
     # Adding a column for text to display the value on all bars
     df_long['Text'] = df_long['Value'].apply(lambda x: f'{x}')
 
     color_map = {
-        'high': 'darkred',          # Dark Red
+        'critical': 'darkred',
+        'high': 'red',          # Dark Red
         'medium': 'darkorange',     # Dark Orange
         'low': 'darkgoldenrod'      # Dark Yellow
     }
 
     # Create a bar graph with subcolumns for the top 10 objects
     fig = px.bar(df_long, x='Project', y='Value', color='Severity', barmode='group',
-                color_discrete_map=color_map, text='Text', 
+                color_discrete_map=color_map, text='Text',
                 title='Top 15 Repos by High Severity Open Vulnerabilities count')
 
     fig.update_traces(texttemplate='%{text}', textposition='outside')
@@ -254,7 +258,7 @@ def create_bar_graph_open_vulns(data, image_folder):
         xaxis_title='Project Name',
         yaxis_title='Number of Vulnerabilities'
     )
-    
+
     graph_div = plot(fig, output_type='div', include_plotlyjs=False)
 
     # Show the plot
@@ -269,6 +273,8 @@ def create_bar_graph_fixed_vulns(data, image_folder):
             row = {}
             row ['Project'] = project_name
             for severity, states in severities.items():
+                if (severity == 'critical'):
+                    row['critical'] = states['fixed']
                 if (severity== 'high'):
                     row ['high'] = states['fixed']
                 if (severity== 'medium'):
@@ -280,6 +286,7 @@ def create_bar_graph_fixed_vulns(data, image_folder):
 
     transformed_json = {
         'Project': [],
+        'critical': [],
         'high': [],
         'medium': [],
         'low': [],
@@ -295,7 +302,7 @@ def create_bar_graph_fixed_vulns(data, image_folder):
             transformed_json[key].append(item[key])
 
     logging.debug(transformed_json)
-    
+
     # Create a DataFrame from the rows
     df = pd.DataFrame(rows)
 
@@ -305,21 +312,22 @@ def create_bar_graph_fixed_vulns(data, image_folder):
     df = df.sort_values(by='high', ascending=False).head(15)
 
     # Melting the DataFrame to long format, which Plotly can use to differentiate subcolumns
-    df_long = pd.melt(df, id_vars='Project', value_vars=['high', 'medium', 'low'], 
+    df_long = pd.melt(df, id_vars='Project', value_vars=['critical', 'high', 'medium', 'low'],
                     var_name='Severity', value_name='Value')
 
     # Adding a column for text to display the value on all bars
     df_long['Text'] = df_long['Value'].apply(lambda x: f'{x}')
 
     color_map = {
-        'high': 'darkred',          # Dark Red
+        'critical': 'darkred',
+        'high': 'red',          # Dark Red
         'medium': 'darkorange',     # Dark Orange
         'low': 'darkgoldenrod'      # Dark Yellow
     }
 
     # Create a bar graph with subcolumns for the top 10 objects
     fig = px.bar(df_long, x='Project', y='Value', color='Severity', barmode='group',
-                color_discrete_map=color_map, text='Text', 
+                color_discrete_map=color_map, text='Text',
                 title='Top 15 Repos by High Severity Fixed Vulnerabilities count')
 
     fig.update_traces(texttemplate='%{text}', textposition='outside')
@@ -343,14 +351,14 @@ def combine_json_files(output_file):
     # create folder reports/EPOCH_TIME
     output_folder = os.path.join(os.getcwd(), "reports", EPOCH_TIME)  # Define the output path
     logging.debug(f"output_folder when combining JSON files: {output_folder}")
-    
+
     # Loop through each file in the folder
     for filename in os.listdir(output_folder):
         if filename.endswith("-" + EPOCH_TIME + ".json"):
             print("Opening " + filename)
             with open(os.path.join(output_folder, filename), 'r') as file:
                 data = json.load(file)
-                
+
                 # Append data from current file to combined data
                 if isinstance(data, list):
                     combined_data.extend(data)
@@ -373,7 +381,7 @@ def combine_pdf_files(output_filename):
     for item in os.listdir(output_folder):
         # Construct the full path of the file
         file_path = os.path.join(output_folder, item)
-        
+
         # Check if the file is a PDF to be combined
         if item.endswith(EPOCH_TIME +".pdf"):
             # Append the PDF to the merger
@@ -424,6 +432,7 @@ def combine_html_files(severity_and_state_counts_all_repos, vulnerability_counts
                     ' ': '   ',
                     'Security Grade': '',
                     '  ': '    ',
+                    'Open/Critical': 0,
                     'Open/High': 0,
                     'Open/Medium': 0,
                     'Open/Low': 0,
@@ -433,16 +442,19 @@ def combine_html_files(severity_and_state_counts_all_repos, vulnerability_counts
                     'Fixed/Low': 0,
             }
             for severity, states in severities.items():
+                if severity == 'critical':
+                    row['Fixed/Critical'] = states['fixed']
+                    row['Open/Critical'] = states['unresolved']
                 if severity == 'high':
                     row['Fixed/High'] = states['fixed']
-                    row['Open/High'] = states['unresolved']               
+                    row['Open/High'] = states['unresolved']
                 if severity == 'medium':
                     row['Fixed/Medium'] = states['fixed']
                     row['Open/Medium'] = states['unresolved']
                 if severity == 'low':
                     row['Fixed/Low'] = states['fixed']
                     row['Open/Low'] = states['unresolved']
-            row['Security Grade'] = assign_security_grade(row['Open/High'], row['Open/Medium'], row['Open/Low'])
+            row['Security Grade'] = assign_security_grade(row['Open/Critical'], row['Open/High'], row['Open/Medium'], row['Open/Low'])
             rows.append(row)
 
     # Create a DataFrame from the rows
@@ -473,16 +485,16 @@ def combine_html_files(severity_and_state_counts_all_repos, vulnerability_counts
     create_heatmap_owasp_top10_categories(owasp_top10_counts_all_repos, folder_path)
 
     relative_path_open = 'open.png'  # This is your relative path
-    absolute_path_open = os.path.join(os.getcwd(), "reports", EPOCH_TIME, relative_path_open) 
+    absolute_path_open = os.path.join(os.getcwd(), "reports", EPOCH_TIME, relative_path_open)
 
     relative_path_fixed = 'fixed.png'  # This is your relative path
-    absolute_path_fixed = os.path.join(os.getcwd(), "reports", EPOCH_TIME, relative_path_fixed) 
+    absolute_path_fixed = os.path.join(os.getcwd(), "reports", EPOCH_TIME, relative_path_fixed)
 
     relative_path_heatmap_vuln_classes = 'heatmap_vulnerability_classes.png'  # This is your relative path
-    absolute_path_heatmap_vuln_classes = os.path.join(os.getcwd(), "reports", EPOCH_TIME, relative_path_heatmap_vuln_classes) 
+    absolute_path_heatmap_vuln_classes = os.path.join(os.getcwd(), "reports", EPOCH_TIME, relative_path_heatmap_vuln_classes)
 
     relative_path_heatmap_owasp_top10_categories = 'heatmap_owasp_top10_categories.png'  # This is your relative path
-    absolute_path_heatmap_owasp_top10_categories = os.path.join(os.getcwd(), "reports", EPOCH_TIME, relative_path_heatmap_owasp_top10_categories) 
+    absolute_path_heatmap_owasp_top10_categories = os.path.join(os.getcwd(), "reports", EPOCH_TIME, relative_path_heatmap_owasp_top10_categories)
 
     logging.debug(f"absolute_path_open= {absolute_path_open}")
     logging.debug(f"absolute_path_fixed= {absolute_path_fixed}")
@@ -502,7 +514,7 @@ def combine_html_files(severity_and_state_counts_all_repos, vulnerability_counts
     </style>
     <style>
     .center-text {{
-        text-align: center; 
+        text-align: center;
     }}
     </style>
     <style>
@@ -675,10 +687,11 @@ def combine_html_files(severity_and_state_counts_all_repos, vulnerability_counts
     }
     pdfkit.from_string(combined_html, os.path.join(folder_path, output_pdf_filename), options=options)
 
-def generate_html_sast(df_high: pd.DataFrame, df_med: pd.DataFrame, df_low: pd.DataFrame, repo_name):
+def generate_html_sast(df_critical: pd.DataFrame, df_high: pd.DataFrame, df_med: pd.DataFrame, df_low: pd.DataFrame, repo_name):
     # get the Overview table HTML from the dataframe
     # overview_table_html = df_overview.to_html(table_id="table")
     # get the Findings table HTML from the dataframe
+    critical_findings_table_html = df_critical.to_html(index=False, table_id="tableCritical", render_links=True, escape=False, classes='my_table')
     high_findings_table_html = df_high.to_html(index=False, table_id="tableHigh", render_links=True, escape=False, classes='my_table')
     med_findings_table_html = df_med.to_html(index=False, table_id="tableMedium", render_links=True, escape=False, classes='my_table')
     low_findings_table_html = df_low.to_html(index=False, table_id="tableLow", render_links=True, escape=False, classes='my_table')
@@ -788,6 +801,10 @@ def generate_html_sast(df_high: pd.DataFrame, df_med: pd.DataFrame, df_low: pd.D
 
         <!-- Table Rows and Data Cells -->
         <tr>
+            <td><a href="#sast-critical"> Findings- SAST Critical Severity </a> </td>
+            <td> {len(df_critical)} </td>
+        </tr>
+        <tr>
             <td><a href="#sast-high"> Findings- SAST High Severity </a> </td>
             <td> {len(df_high)} </td>
         </tr>
@@ -801,6 +818,15 @@ def generate_html_sast(df_high: pd.DataFrame, df_med: pd.DataFrame, df_low: pd.D
         </tr>
     </table>
 
+    </div>
+
+    <div style="page-break-after: always;"></div>
+
+    <div class="heading">
+    <h2> <p id="sast-critical"> Findings Summary- CRITICAL Severity </p> </h2>
+    </div>
+    <div class="container">
+        {critical_findings_table_html}
     </div>
 
     <div style="page-break-after: always;"></div>

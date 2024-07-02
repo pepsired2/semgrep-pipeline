@@ -368,7 +368,7 @@ def process_sast_findings(df: pd.DataFrame, html_filename, pdf_filename, repo_na
     # Make the severity, confidence, likelyhood & impact columns width = 12
     worksheet.set_column(4, 7, 12)
 
-    # #  create new df_high by filtering df_red for HIGH severity
+    # #  create new df_critical by filtering df_red for CRITICAL severity
     df_critical = df_red.loc[(df_red['severity'] == 'critical')]
     # Create a list of column headers, to use in add_table().
     column_settings = [{"header": column.split(".")[-1]} for column in df_critical.columns]
@@ -392,7 +392,7 @@ def process_sast_findings(df: pd.DataFrame, html_filename, pdf_filename, repo_na
     writer.close()
 
     # generate the HTML from the dataframe
-    html = file_handling_helpers.generate_html_sast(df_high, df_med, df_low, repo_name)
+    html = file_handling_helpers.generate_html_sast(df_critical, df_high, df_med, df_low, repo_name)
 
     # write the HTML content to an HTML file
     open(html_filename, "w").write(html)
