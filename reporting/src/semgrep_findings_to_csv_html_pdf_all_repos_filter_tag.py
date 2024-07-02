@@ -46,10 +46,11 @@ def get_deployments():
         sys.exit(f'Getting org details failed: {r.text}')
     data = json.loads(r.text)
     slug_name = data['deployments'][0].get('slug')
+    deployment_id = data['deployments'][0].get('id')
     logging.info("Accessing org: " + slug_name)
-    return slug_name
+    return slug_name, deployment_id
 
-def get_projects(slug_name, interesting_tag):
+def get_projects(slug_name, deployment_id, interesting_tag):
     logging.info("Getting list of projects in org: " + slug_name)
 
     headers = {"Accept": "application/json", "Authorization": "Bearer " + SEMGREP_API_WEB_TOKEN}
@@ -65,7 +66,7 @@ def get_projects(slug_name, interesting_tag):
         logging.debug(f"Currently processing project/repo: {project_name}  with the following tags {project['tags']}")
         if interesting_tag in project.get("tags", []):
             logging.debug(f"Currently processing project/repo: {project_name} and has the tag {interesting_tag} ")
-            get_findings_per_repo(slug_name, project_name)
+            get_findings_per_repo(slug_name, project_name, deployment_id)
 
     print(f"vulnerability_counts_all_repos: {vulnerability_counts_all_repos}")
 
@@ -87,7 +88,7 @@ def get_projects(slug_name, interesting_tag):
     file_handling_helpers.combine_html_files(severity_and_state_counts_all_repos, vulnerability_counts_all_repos, owasp_top10_counts_all_repos, output_filename, output_pdf_filename, interesting_tag)
     logging.info (f"finished process to combine HTML files")
 
-def get_findings_per_repo(slug_name, repo):
+def get_findings_per_repo(slug_name, repo, deployment_id):
 
     headers = {"Accept": "application/json", "Authorization": "Bearer " + SEMGREP_API_WEB_TOKEN}
     params =  {"page_size": 3000, "repos": repo}
@@ -97,6 +98,7 @@ def get_findings_per_repo(slug_name, repo):
         sys.exit(f'Getting findings for project failed: {r.text}')
     data = json.loads(r.text)
 
+    secrets_data = get_secrets_data(deployment_id, repo)
     # create folder reports/EPOCH_TIME
     output_folder = os.path.join(os.getcwd(), "reports", EPOCH_TIME)  # Define the output path
     os.makedirs(output_folder, exist_ok=True)
@@ -427,6 +429,9 @@ def adjust_severity_class(data):
 
     return data
 
+def get_secrets_data(deployment_id, repo):
+    pass
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
@@ -452,6 +457,6 @@ if __name__ == "__main__":
             logging.debug(arg)
             interesting_tag = arg
 
-    slug_name = get_deployments()
-    get_projects(slug_name, interesting_tag)
+    slug_name, deployment_id = get_deployments()
+    get_projects(slug_name, deployment_id, interesting_tag)
     logging.info ("completed conversion process")
