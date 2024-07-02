@@ -369,6 +369,11 @@ def process_sast_findings(df: pd.DataFrame, html_filename, pdf_filename, repo_na
     worksheet.set_column(4, 7, 12)
 
     # #  create new df_high by filtering df_red for HIGH severity
+    df_critical = df_red.loc[(df_red['severity'] == 'critical')]
+    # Create a list of column headers, to use in add_table().
+    column_settings = [{"header": column.split(".")[-1]} for column in df_critical.columns]
+
+    # #  create new df_high by filtering df_red for HIGH severity
     df_high = df_red.loc[(df_red['severity'] == 'high')]
     # Create a list of column headers, to use in add_table().
     column_settings = [{"header": column.split(".")[-1]} for column in df_high.columns]
@@ -412,6 +417,16 @@ def json_to_html_pandas(json_file, html_file, pdf_file, repo_name):
 
     logging.info("Findings converted from JSON file : " + json_file + " to HTML File: " + html_file)
 
+def adjust_severity_class(data):
+    for item in data:
+        severity = item.get('severity')  # Get the severity of the current item
+        confidence = item.get('confidence')  # Get the confidence of the current item
+
+        if severity == 'high' and confidence == 'high'
+            item['severity'] = 'critical'
+
+    return data
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
@@ -440,14 +455,3 @@ if __name__ == "__main__":
     slug_name = get_deployments()
     get_projects(slug_name, interesting_tag)
     logging.info ("completed conversion process")
-
-
-def adjust_severity_class(data):
-    for item in data:
-        severity = item.get('severity')  # Get the severity of the current item
-        confidence = item.get('confidence')  # Get the confidence of the current item
-
-        if severity == 'high' and confidence == 'high'
-            item['severity'] = 'critical'
-
-    return data
