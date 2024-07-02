@@ -422,7 +422,7 @@ def adjust_severity_class(data):
         severity = item.get('severity')  # Get the severity of the current item
         confidence = item.get('confidence')  # Get the confidence of the current item
 
-        if severity == 'high' and confidence == 'high'
+        if severity == 'high' and confidence == 'high':
             item['severity'] = 'critical'
 
     return data
