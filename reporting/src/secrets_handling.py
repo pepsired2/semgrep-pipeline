@@ -98,7 +98,7 @@ def count_severity_and_state(data):
 def generate_reports(data, json_file_path, repo, EPOCH_TIME):
     with open(json_file_path, "w") as file:
         json.dump(data, file)
-        logging.info("Secret findings for requested project/repo: " + repo + "written to: " + file_path)
+        logging.info("Secret findings for requested project/repo: " + repo + "written to: " + json_file_path)
 
     # count sevrity data
 
