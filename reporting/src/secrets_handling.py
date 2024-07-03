@@ -1,3 +1,4 @@
+from html import escape
 import json
 import requests
 import logging
@@ -159,18 +160,68 @@ def json_to_df_html(json_file):
     return df
 
 def process_findings(df: pd.DataFrame, html_file_path, pdf_file_path, repo):
+    def format_repository_url(url):
+        return f'<a href="{url}">{url}</a>'
+
+    # Custom mapping for severity levels
+    severity_mapping = {
+        'SEVERITY_CRITICAL': 'critical',
+        'SEVERITY_HIGH': 'high',
+        'SEVERITY_MEDIUM': 'medium',
+        'SEVERITY_LOW': 'low'
+    }
+
+    validation_mapping = {
+        'VALIDATION_STATE_CONFIRMED_VALID' : 'confirmed valid',
+        'VALIDATION_STATE_CONFIRMED_INVALID' : 'confirmed invalid',
+        'VALIDATION_STATE_VALIDATION_ERROR' : 'validation error',
+        'VALIDATION_STATE_NO_VALIDATOR' : 'no validator',
+
+    }
+
+    confidence_mapping = {
+        'CONFIDENCE_HIGH': 'high',
+        'CONFIDENCE_MEDIUM': 'medium',
+        'CONFIDENCE_LOW': 'low'
+    }
+
+    status_mapping = {
+        'FINDING_STATUS_OPEN': 'open',
+        'FINDING_STATUS_IGNORED': 'ignored',
+        'FINDING_STATUS_FIXED': 'fixed',
+        'FINDING_STATUS_REMOVED': 'removed',
+        'FINDING_STATUS_UNKNOWN': 'unknown',
+    }
 
     interesting_columns = ['type', 'findingPath', 'repository.name', 'repository.url', 'createdAt', 'updatedAt', 'status', 'severity', 'confidence', 'validationState']
 
     df = df[interesting_columns]
 
-    html = df.to_html(index=False)
+    df = df.rename(columns={'findingPath' : 'finding path' , 'repository.name'  : 'repository name', 'repository.url' : 'repository url', 'createdAt': 'created at', 'updatedAt': 'updated at', 'validationState': 'validation state' })
+
+    # Apply formatting function to 'repository url' column
+    df['repository url'] = df['repository url'].apply(format_repository_url)
+
+    # Apply severity mapping
+    df['severity'] = df['severity'].map(severity_mapping).fillna(df['severity']
+
+    # Apply validation mapping
+    df['validation state'] = df['validation state'].map(validation_mapping).fillna(df['validation state'])
+
+    # Apply confidence mapping
+    df['confidence'] = df['confidence'].map(confidence_mapping).fillna(df['confidence state'])
+
+
+
+    html = df.to_html(index=False, escape=False)
+
     with open(html_file_path, 'w') as f:
         f.write(html)
 
     # convert from HTML to PDF
     options = {
         'orientation': 'Landscape',
-        'enable-local-file-access': None
+        'enable-local-file-access': None,
+        'page-size': 'A4'
     }
     pdfkit.from_string(html, pdf_file_path, options=options)
