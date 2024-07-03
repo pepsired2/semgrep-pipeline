@@ -68,7 +68,7 @@ def count_severity_and_state(data):
     }
 
     for item in data:
-        severity = item.get('severity').lower()
+        severity = item.get('severity', '').lower()
         if 'critical' in severity:
             severity = 'critical'
         elif 'high' in severity:
@@ -78,7 +78,7 @@ def count_severity_and_state(data):
         elif 'low' in severity:
             severity = 'low'
 
-        state = item.get('state').lower()
+        state = item.get('status', '').lower()
         if 'open' in state:
             state = 'open'
         elif 'ignored' in state:
