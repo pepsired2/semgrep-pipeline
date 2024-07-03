@@ -203,7 +203,7 @@ def process_findings(df: pd.DataFrame, html_file_path, pdf_file_path, repo):
     df['repository url'] = df['repository url'].apply(format_repository_url)
 
     # Apply severity mapping
-    df['severity'] = df['severity'].map(severity_mapping).fillna(df['severity']
+    df['severity'] = df['severity'].map(severity_mapping).fillna(df['severity'])
 
     # Apply validation mapping
     df['validation state'] = df['validation state'].map(validation_mapping).fillna(df['validation state'])
