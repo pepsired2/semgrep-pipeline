@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import pandas as pd
-from scanning.src.util.semgrep_finding import severity
 
 def get_data(deployment_id, repo):
     """
@@ -135,7 +134,7 @@ def json_to_df(json_file):
     # Read the JSON file into a DataFrame
     df = pd.read_json(json_file)
     # filter out only specific columns
-    df = df.loc[:, [ 'type', 'findingPath', 'status', 'severity', 'confidence',  'validationState']]
+    df = df.loc[:, [ 'type', 'findingPath', 'repository', 'createdAt', 'updatedAt', 'status', 'severity', 'confidence',  'validationState']]
     logging.info("Findings converted to DF from JSON file : " + json_file)
 
     return df
