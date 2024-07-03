@@ -97,18 +97,29 @@ def get_findings_per_repo(slug_name, repo, deployment_id):
     if r.status_code != 200:
         sys.exit(f'Getting findings for project failed: {r.text}')
     data = json.loads(r.text)
+    secrets_data = []
+    try:
+        secrets_data = get_secrets_data(deployment_id, repo)
+    except Exception as e:
+        logging.error(e)
+        logging.info(f'Getting secrets data failed')
 
-    secrets_data = get_secrets_data(deployment_id, repo)
     # create folder reports/EPOCH_TIME
     output_folder = os.path.join(os.getcwd(), "reports", EPOCH_TIME)  # Define the output path
     os.makedirs(output_folder, exist_ok=True)
 
-    # Construct the full path for the output file
+    # Construct the full path for the SAST output file
     output_filename = re.sub(r"[^\w\s]", "_", repo) + "-" + EPOCH_TIME + ".json"
     file_path = os.path.join(output_folder, output_filename)
 
+    # Construct the full path for the Secrets output file
+    secrets_output_filename = re.sub(r"[^\w\s]", "_", repo) + "-" + "secrets" + EPOCH_TIME + ".json"
+    secrets_file_path = os.path.join(output_folder, secrets_output_filename)
+    if len(secrets_data):
+        generate_secrets_reports(secrets_data, secrets_file_path, repo)
+
     if FILTER_IMPORTANT_FINDINGS == True:
-        logging.info("Filtering Important findings for requested project/repo: " + project_name)
+        logging.info("Filtering Important findings for requested project/repo: " + repo)
         data = [obj for obj in data['findings'] if obj["severity"] == "high" and obj["confidence"] == "high" or obj["confidence"] == "medium"]
     else:
         logging.info("All findings for requested project/repo: " + repo)
@@ -430,7 +441,57 @@ def adjust_severity_class(data):
     return data
 
 def get_secrets_data(deployment_id, repo):
-    pass
+    """
+    Fetches the secrets data from the Semgrep API for the given deployment and repository.
+
+    Args:
+        deployment_id (str): The deployment ID for which to fetch the secrets.
+        repo (str): The repository name for which to fetch the secrets.
+
+    Returns:
+        List[Dict]: A list of findings from the Semgrep API.
+    """
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {SEMGREP_API_WEB_TOKEN}"
+    }
+
+    params = {"repo": repo}
+    base_url = f'https://semgrep.dev/api/v1/deployments/{deployment_id}/secrets'
+    data = []
+
+    with requests.Session() as session:
+        try:
+            # Initial request
+            response = session.get(base_url, params=params, headers=headers)
+            response.raise_for_status()
+            result = response.json()
+            cursor = result.get('cursor')
+            data.extend(result.get('findings', []))
+
+            # Subsequent requests if cursor exists
+            while cursor:
+                params['cursor'] = cursor
+                response = session.get(base_url, params=params, headers=headers)
+                response.raise_for_status()
+                result = response.json()
+                cursor = result.get('cursor')
+                data.extend(result.get('findings', []))
+
+        except requests.RequestException as e:
+            logging.error(f"Request failed: {e}")
+            raise
+
+        except ValueError as e:
+            logging.error(f"Error parsing JSON response: {e}")
+            raise
+
+    return data
+
+def generate_secrets_reports(data, file_path, repo):
+    with open(file_path, "w") as file:
+        json.dump(data, file)
+        logging.info("Secret findings for requested project/repo: " + repo + "written to: " + file_path)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
