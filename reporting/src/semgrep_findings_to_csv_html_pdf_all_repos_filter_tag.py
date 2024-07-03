@@ -21,6 +21,7 @@ import html
 import pdfkit
 import time
 import file_handling_helpers
+import secrets_handling as secrets
 
 
 
@@ -99,7 +100,7 @@ def get_findings_per_repo(slug_name, repo, deployment_id):
     data = json.loads(r.text)
     secrets_data = []
     try:
-        secrets_data = get_secrets_data(deployment_id, repo)
+        secrets_data = secrets.get_data(deployment_id, repo)
     except Exception as e:
         logging.error(e)
         logging.info(f'Getting secrets data failed')
@@ -113,10 +114,12 @@ def get_findings_per_repo(slug_name, repo, deployment_id):
     file_path = os.path.join(output_folder, output_filename)
 
     # Construct the full path for the Secrets output file
-    secrets_output_filename = re.sub(r"[^\w\s]", "_", repo) + "-" + "secrets" + EPOCH_TIME + ".json"
+    secrets_output_filename = re.sub(r"[^\w\s]", "_", repo) + "-" + "secrets-" + EPOCH_TIME + ".json"
     secrets_file_path = os.path.join(output_folder, secrets_output_filename)
     if len(secrets_data):
-        generate_secrets_reports(secrets_data, secrets_file_path, repo)
+        secrets.generate_reports(secrets_data, secrets_file_path, repo, EPOCH_TIME)
+    else:
+        logging.info(f"No secrets finding in the repo - {repo}")
 
     if FILTER_IMPORTANT_FINDINGS == True:
         logging.info("Filtering Important findings for requested project/repo: " + repo)
@@ -439,59 +442,6 @@ def adjust_severity_class(data):
             item['severity'] = 'critical'
 
     return data
-
-def get_secrets_data(deployment_id, repo):
-    """
-    Fetches the secrets data from the Semgrep API for the given deployment and repository.
-
-    Args:
-        deployment_id (str): The deployment ID for which to fetch the secrets.
-        repo (str): The repository name for which to fetch the secrets.
-
-    Returns:
-        List[Dict]: A list of findings from the Semgrep API.
-    """
-    headers = {
-        "Accept": "application/json",
-        "Authorization": f"Bearer {SEMGREP_API_WEB_TOKEN}"
-    }
-
-    params = {"repo": repo}
-    base_url = f'https://semgrep.dev/api/v1/deployments/{deployment_id}/secrets'
-    data = []
-
-    with requests.Session() as session:
-        try:
-            # Initial request
-            response = session.get(base_url, params=params, headers=headers)
-            response.raise_for_status()
-            result = response.json()
-            cursor = result.get('cursor')
-            data.extend(result.get('findings', []))
-
-            # Subsequent requests if cursor exists
-            while cursor:
-                params['cursor'] = cursor
-                response = session.get(base_url, params=params, headers=headers)
-                response.raise_for_status()
-                result = response.json()
-                cursor = result.get('cursor')
-                data.extend(result.get('findings', []))
-
-        except requests.RequestException as e:
-            logging.error(f"Request failed: {e}")
-            raise
-
-        except ValueError as e:
-            logging.error(f"Error parsing JSON response: {e}")
-            raise
-
-    return data
-
-def generate_secrets_reports(data, file_path, repo):
-    with open(file_path, "w") as file:
-        json.dump(data, file)
-        logging.info("Secret findings for requested project/repo: " + repo + "written to: " + file_path)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
