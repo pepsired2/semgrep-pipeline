@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import pandas as pd
+import pdfkit
 
 def get_data(deployment_id, repo):
     """
@@ -78,7 +79,7 @@ def count_severity_and_state(data):
         elif 'low' in severity:
             severity = 'low'
 
-        state = item.get('status', '').lower()
+        state = item.get('status', 'unknown').lower()
         if 'open' in state:
             state = 'open'
         elif 'ignored' in state:
@@ -120,6 +121,7 @@ def generate_reports(data, json_file_path, repo, EPOCH_TIME):
     logging.info(f"file names: {output_name}, {json_file_path},{csv_file_path}, {xlsx_file_path},{html_file_path}, {pdf_file_path}")
 
     json_to_csv_pandas(json_file_path, csv_file_path)
+    json_to_html_pandas(json_file_path, html_file_path, pdf_file_path, repo)
     logging.info (f"completed conversion process for repo: {repo}")
 
 def json_to_csv_pandas(json_file, csv_file):
@@ -138,3 +140,37 @@ def json_to_df(json_file):
     logging.info("Findings converted to DF from JSON file : " + json_file)
 
     return df
+
+def json_to_html_pandas(json_file_path, html_file_path, pdf_file_path, repo):
+    df = json_to_df_html(json_file_path)
+
+    # Write the DataFrame to HTML
+    process_findings(df, html_file_path, pdf_file_path, repo)
+
+    logging.info("Findings converted from JSON file : " + json_file_path + " to HTML File: " + html_file_path)
+
+
+def json_to_df_html(json_file):
+    with open(json_file) as json_file_data:
+        data = json.load(json_file_data)
+        logging.debug(data)
+
+    df = pd.json_normalize(data)
+    return df
+
+def process_findings(df: pd.DataFrame, html_file_path, pdf_file_path, repo):
+
+    interesting_columns = ['type', 'findingPath', 'repository.name', 'repository.url', 'createdAt', 'updatedAt', 'status', 'severity', 'confidence', 'validationState']
+
+    df = df[interesting_columns]
+
+    html = df.to_html(index=False)
+    with open(html_file_path, 'w') as f:
+        f.write(html)
+
+    # convert from HTML to PDF
+    options = {
+        'orientation': 'Landscape',
+        'enable-local-file-access': None
+    }
+    pdfkit.from_string(html, pdf_file_path, options=options)
