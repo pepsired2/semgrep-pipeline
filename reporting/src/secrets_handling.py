@@ -209,8 +209,10 @@ def process_findings(df: pd.DataFrame, html_file_path, pdf_file_path, repo):
     df['validation state'] = df['validation state'].map(validation_mapping).fillna(df['validation state'])
 
     # Apply confidence mapping
-    df['confidence'] = df['confidence'].map(confidence_mapping).fillna(df['confidence state'])
+    df['confidence'] = df['confidence'].map(confidence_mapping).fillna(df['confidence'])
 
+    # Apply confidence mapping
+    df['status'] = df['status'].map(status_mapping).fillna(df['status'])
 
 
     html = df.to_html(index=False, escape=False)
