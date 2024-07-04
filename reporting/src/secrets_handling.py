@@ -6,7 +6,6 @@ import os
 import re
 import pandas as pd
 import pdfkit
-from scanning.src.util.semgrep_finding import confidence, severity
 
 def get_data(deployment_id, repo):
     """
