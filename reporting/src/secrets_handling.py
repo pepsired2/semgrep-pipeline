@@ -6,6 +6,7 @@ import os
 import re
 import pandas as pd
 import pdfkit
+from scanning.src.util.semgrep_finding import confidence, severity
 
 def get_data(deployment_id, repo):
     """
@@ -58,7 +59,7 @@ def get_data(deployment_id, repo):
         except ValueError as e:
             logging.error(f"Error parsing JSON response: {e}")
             raise
-
+    data = adjust_severity_class(data)
     return data
 
 def count_severity_and_state(data):
@@ -137,7 +138,7 @@ def json_to_df(json_file):
     # Read the JSON file into a DataFrame
     df = pd.read_json(json_file)
     # filter out only specific columns
-    df = df.loc[:, [ 'type', 'findingPath', 'repository', 'createdAt', 'updatedAt', 'status', 'severity', 'confidence',  'validationState']]
+    df = df.loc[:, [ 'type', 'findingPath', 'findingPathUrl', 'repository', 'createdAt', 'updatedAt', 'status', 'severity', 'confidence',  'validationState']]
     logging.info("Findings converted to DF from JSON file : " + json_file)
 
     return df
@@ -179,11 +180,11 @@ def process_findings(df: pd.DataFrame, html_file_path, pdf_file_path, repo):
 
     }
 
-    confidence_mapping = {
-        'CONFIDENCE_HIGH': 'high',
-        'CONFIDENCE_MEDIUM': 'medium',
-        'CONFIDENCE_LOW': 'low'
-    }
+    # confidence_mapping = {
+    #     'CONFIDENCE_HIGH': 'high',
+    #     'CONFIDENCE_MEDIUM': 'medium',
+    #     'CONFIDENCE_LOW': 'low'
+    # }
 
     status_mapping = {
         'FINDING_STATUS_OPEN': 'open',
@@ -193,14 +194,14 @@ def process_findings(df: pd.DataFrame, html_file_path, pdf_file_path, repo):
         'FINDING_STATUS_UNKNOWN': 'unknown',
     }
 
-    interesting_columns = ['type', 'findingPath', 'repository.name', 'repository.url', 'createdAt', 'updatedAt', 'status', 'severity', 'confidence', 'validationState']
+    interesting_columns = ['type', 'findingPath', 'findingPathUrl', 'createdAt', 'updatedAt', 'status', 'severity', 'validationState']
 
     df = df[interesting_columns]
 
-    df = df.rename(columns={'findingPath' : 'finding path' , 'repository.name'  : 'repository name', 'repository.url' : 'repository url', 'createdAt': 'created at', 'updatedAt': 'updated at', 'validationState': 'validation state' })
+    df = df.rename(columns={'findingPath' : 'finding path' , 'findingPathUrl' : 'finding path url', 'createdAt': 'created at', 'updatedAt': 'updated at', 'validationState': 'validation state' })
 
     # Apply formatting function to 'repository url' column
-    df['repository url'] = df['repository url'].apply(format_repository_url)
+    df['finding path url'] = df['finding path url'].apply(format_repository_url)
 
     # Apply severity mapping
     df['severity'] = df['severity'].map(severity_mapping).fillna(df['severity'])
@@ -209,7 +210,7 @@ def process_findings(df: pd.DataFrame, html_file_path, pdf_file_path, repo):
     df['validation state'] = df['validation state'].map(validation_mapping).fillna(df['validation state'])
 
     # Apply confidence mapping
-    df['confidence'] = df['confidence'].map(confidence_mapping).fillna(df['confidence'])
+    # df['confidence'] = df['confidence'].map(confidence_mapping).fillna(df['confidence'])
 
     # Apply confidence mapping
     df['status'] = df['status'].map(status_mapping).fillna(df['status'])
@@ -227,3 +228,13 @@ def process_findings(df: pd.DataFrame, html_file_path, pdf_file_path, repo):
         'page-size': 'A4'
     }
     pdfkit.from_string(html, pdf_file_path, options=options)
+
+def adjust_severity_class(data):
+    for item in data:
+        severity = item.get('severity', '').lower()
+        confidence = item.get('confidence', '').lower()
+        validation_state = item.get('validationState', '').lower()
+
+        if 'high' in severity and 'high' in confidence and 'confirmed_valid' in validation_state:
+            item['severity'] = 'SEVERITY_CRITICAL'
+    return data

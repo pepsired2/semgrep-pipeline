@@ -504,7 +504,7 @@ def combine_html_files(severity_and_state_counts_all_repos, vulnerability_counts
     combined_html = f"""
     <html>
     <head>
-    <title> Semgrep SAST Scan Report for All Repository with tag {interesting_tag} </title>
+    <title> SAST Scan Report for All Repository with tag {interesting_tag} </title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
     .container-table {{
@@ -596,9 +596,6 @@ def combine_html_files(severity_and_state_counts_all_repos, vulnerability_counts
     </header>
     <body>
     <div style="height: 75px;"></div> <!-- Creates 75px of vertical space -->
-    <div class="container">
-    <img src="https://i.ibb.co/8xyV6WJ/Semgrep-logo.png" alt="logo" id="myImage">
-    </div>
     <div class="container">
     <h1> <p style="text-align: center;" id="sast"> Semgrep SAST Scan Report for All Repositories with tag {interesting_tag} </p> </h1>
     <h2> <p style="text-align: center;" id="reporttime"> Report Generated at {formatted_now}</p> </h2>
@@ -781,9 +778,6 @@ def generate_html_sast(df_critical: pd.DataFrame, df_high: pd.DataFrame, df_med:
     </header>
     <body>
     <div style="height: 75px;"></div> <!-- Creates 75px of vertical space -->
-    <div class="container">
-    <img src="https://i.ibb.co/8xyV6WJ/Semgrep-logo.png" alt="logo" id="myImage">
-    </div>
     <div class="container">
     <h1> <p style="text-align: center;" id="sast"> Semgrep SAST Scan Report for Repository: {repo_name} </p> </h1>
     <h2> <p style="text-align: center;" id="reporttime"> Report Generated at {formatted_now} </p> </h2>
