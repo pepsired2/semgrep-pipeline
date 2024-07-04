@@ -705,7 +705,7 @@ def generate_html_sast(df_critical: pd.DataFrame, df_high: pd.DataFrame, df_med:
     html = f"""
     <html>
     <head>
-    <title> Semgrep SAST Scan Report for Repository: {repo_name} </title>
+    <title> SAST Scan Report for Repository: {repo_name} </title>
     <style>
     .my_table {{
         width: 100%;
