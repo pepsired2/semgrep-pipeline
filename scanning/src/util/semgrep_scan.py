@@ -6,8 +6,11 @@ from config.settings import DEFAULT_JOB_COUNT, DEFAULT_MAX_MEMORY, SemgrepDiffSc
 semgrep_diff_scan_config = SemgrepDiffScanConfig()
 semgrep_full_scan_config = SemgrepFullScanConfig()
 def run_command(command):
+
+    # Get the current environment variables
+    env = os.environ.copy()
     # Start the subprocess
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
 
     # Read one line at a time as it becomes available
     while True:
@@ -62,7 +65,7 @@ def diff_scan():
         export BUILD_BUILDID={build_id} && \\
         export SEMGREP_COMMIT={semgrep_commit} && \\
         semgrep login && \\
-        /root/.local/bin/semgrep ci --json -o {output_directory}/semgrep-results.json --verbose --config auto
+        semgrep ci --json -o {output_directory}/semgrep-results.json --verbose --config auto
     """.format(
         semgrep_app_token=semgrep_diff_scan_config.semgrep_app_token,
         semgrep_repo_display_name=semgrep_diff_scan_config.repository_display_Name,
