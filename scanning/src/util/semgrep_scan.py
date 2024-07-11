@@ -8,7 +8,7 @@ semgrep_full_scan_config = SemgrepFullScanConfig()
 def run_command(command):
     # Start the subprocess
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    
+
     # Read one line at a time as it becomes available
     while True:
         output = process.stdout.readline()
@@ -16,7 +16,7 @@ def run_command(command):
             break
         if output:
             print(output.strip())
-    
+
     # Wait for the subprocess to finish and get the exit code
     rc = process.poll()
     return rc
@@ -29,6 +29,7 @@ def diff_scan():
         docker run \\
             -v "{scan_target_path}:/src" \\
             -v "{output_directory}:/output" \\
+            -v /var/run/docker.sock:/var/run/docker.sock \\
             -e "SEMGREP_APP_TOKEN={semgrep_app_token}" \\
             -e "SEMGREP_REPO_DISPLAY_NAME={semgrep_repo_display_name}" \\
             -e "SEMGREP_PR_ID={semgrep_pr_id}" \\
@@ -50,7 +51,7 @@ def diff_scan():
             build_id = semgrep_diff_scan_config.build_buildid,
             semgrep_commit = semgrep_diff_scan_config.last_merge_commit_id
         )
-    
+
     semgrep_return_code = run_command(docker_command)
     return semgrep_return_code
 
@@ -72,7 +73,7 @@ def full_scan():
             repo_url = semgrep_full_scan_config.repository_web_url,
             semgrep_command = _get_full_scan_command()
         )
-    
+
     semgrep_return_code = run_command(docker_command)
     return semgrep_return_code
 
