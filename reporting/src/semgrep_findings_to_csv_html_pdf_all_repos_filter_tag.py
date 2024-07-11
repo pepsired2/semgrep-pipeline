@@ -241,7 +241,7 @@ def json_to_df(json_file):
 
 
     # filter out only specific columns
-    df = df.loc[:, [ 'Finding Title', 'Finding Description & Remediation', 'state', 'First Seen', 'severity', 'confidence',  'triage_state', 'triaged_at', 'triage_comment', 'state_updated_at', 'repository',  'location' ]]
+    df = df.loc[:, [ 'Finding Title', 'Finding Description & Remediation', 'state', 'status', 'First Seen', 'severity', 'confidence',  'triage_state', 'triaged_at', 'triage_comment', 'state_updated_at', 'repository',  'location' ]]
     logging.info("Findings converted to DF from JSON file : " + json_file)
 
     return df
@@ -314,6 +314,7 @@ def process_sast_findings(df: pd.DataFrame, html_filename, pdf_filename, repo_na
         'Finding Description & Remediation',
         'severity',
         'state',
+        'status',
         'repository.name',
         'repository.url',
         'location.file_path',
