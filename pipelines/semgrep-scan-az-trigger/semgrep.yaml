@@ -44,6 +44,9 @@ stages:
         value: semgrep-pipelines
       - name: scanningRepositoryPath
         value: $(Agent.BuildDirectory)/$(scanningRepositoryName)
+      - name: PATH
+        value: /root/.local/bin:$(PATH)
+
     jobs:
       - job:
         displayName: Semgrep Diff Scan
