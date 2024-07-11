@@ -779,7 +779,7 @@ def generate_html_sast(df_critical: pd.DataFrame, df_high: pd.DataFrame, df_med:
     <body>
     <div style="height: 75px;"></div> <!-- Creates 75px of vertical space -->
     <div class="container">
-    <h1> <p style="text-align: center;" id="sast"> Semgrep SAST Scan Report for Repository: {repo_name} </p> </h1>
+    <h1> <p style="text-align: center;" id="sast"> SAST Scan Report for Repository: {repo_name} </p> </h1>
     <h2> <p style="text-align: center;" id="reporttime"> Report Generated at {formatted_now} </p> </h2>
     </div>
     <div style="height: 40px;"></div> <!-- Creates 50px of vertical space -->
@@ -796,19 +796,19 @@ def generate_html_sast(df_critical: pd.DataFrame, df_high: pd.DataFrame, df_med:
         <!-- Table Rows and Data Cells -->
         <tr>
             <td><a href="#sast-critical"> Findings- SAST Critical Severity </a> </td>
-            <td> {len(df_critical)} </td>
+            <td> {len(df_critical[df_critical['status'] != 'ignored'])} </td>
         </tr>
         <tr>
             <td><a href="#sast-high"> Findings- SAST High Severity </a> </td>
-            <td> {len(df_high)} </td>
+            <td> {len(df_high[df_high['status'] != 'ignored'])} </td>
         </tr>
         <tr>
             <td> <a href="#sast-med"> Findings- SAST Medium Severity </a> </td>
-            <td> {len(df_med)} </td>
+            <td> {len(df_med[df_med['status'] != 'ignored'])} </td>
         </tr>
         <tr>
             <td> <a href="#sast-low"> Findings- SAST Low Severity </a> </td>
-            <td> {len(df_low)} </td>
+            <td> {len(df_low[df_low['status'] != 'ignored'])} </td>
         </tr>
     </table>
 
