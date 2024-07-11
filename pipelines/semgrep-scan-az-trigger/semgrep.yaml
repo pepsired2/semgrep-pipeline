@@ -44,8 +44,6 @@ stages:
         value: semgrep-pipelines
       - name: scanningRepositoryPath
         value: $(Agent.BuildDirectory)/$(scanningRepositoryName)
-      - name: PATH
-        value: /root/.local/bin:$(PATH)
 
     jobs:
       - job:
@@ -94,7 +92,7 @@ stages:
           - script: |
               python3.11 -m pip install --upgrade pip
               pip install --user pipenv
-              pipenv install --ignore-pipfile
+              /root/.local/bin/pipenv install --ignore-pipfile
             displayName: "Install Python Dependencies"
             workingDirectory: $(scanningRepositoryPath)/scanning
 
