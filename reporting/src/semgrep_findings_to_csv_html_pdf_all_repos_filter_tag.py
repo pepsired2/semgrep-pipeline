@@ -1,7 +1,7 @@
 # Steps:
 # 1. Read findings from SEMGREP using API and write to JSON
 # 2. Convert the json file to pandas dataframe
-# 3. Get the list of all column names from headers  
+# 3. Get the list of all column names from headers
 # 4. list of columns of interest to include in the report
 # 5. Create a new dataframe with the columns of interest
 # 6. Write the dataframe to excel file
@@ -21,6 +21,7 @@ import html
 import pdfkit
 import time
 import file_handling_helpers
+import secrets_handling as secrets
 
 
 
@@ -46,10 +47,11 @@ def get_deployments():
         sys.exit(f'Getting org details failed: {r.text}')
     data = json.loads(r.text)
     slug_name = data['deployments'][0].get('slug')
+    deployment_id = data['deployments'][0].get('id')
     logging.info("Accessing org: " + slug_name)
-    return slug_name
+    return slug_name, deployment_id
 
-def get_projects(slug_name, interesting_tag):
+def get_projects(slug_name, deployment_id, interesting_tag):
     logging.info("Getting list of projects in org: " + slug_name)
 
     headers = {"Accept": "application/json", "Authorization": "Bearer " + SEMGREP_API_WEB_TOKEN}
@@ -65,7 +67,7 @@ def get_projects(slug_name, interesting_tag):
         logging.debug(f"Currently processing project/repo: {project_name}  with the following tags {project['tags']}")
         if interesting_tag in project.get("tags", []):
             logging.debug(f"Currently processing project/repo: {project_name} and has the tag {interesting_tag} ")
-            get_findings_per_repo(slug_name, project_name)
+            get_findings_per_repo(slug_name, project_name, deployment_id)
 
     print(f"vulnerability_counts_all_repos: {vulnerability_counts_all_repos}")
 
@@ -87,8 +89,8 @@ def get_projects(slug_name, interesting_tag):
     file_handling_helpers.combine_html_files(severity_and_state_counts_all_repos, vulnerability_counts_all_repos, owasp_top10_counts_all_repos, output_filename, output_pdf_filename, interesting_tag)
     logging.info (f"finished process to combine HTML files")
 
-def get_findings_per_repo(slug_name, repo):
-      
+def get_findings_per_repo(slug_name, repo, deployment_id):
+
     headers = {"Accept": "application/json", "Authorization": "Bearer " + SEMGREP_API_WEB_TOKEN}
     params =  {"page_size": 3000, "repos": repo}
     # r = requests.get('https://semgrep.dev/api/v1/deployments/' + slug_name + '/findings?repos='+repo,params=params, headers=headers)
@@ -96,17 +98,31 @@ def get_findings_per_repo(slug_name, repo):
     if r.status_code != 200:
         sys.exit(f'Getting findings for project failed: {r.text}')
     data = json.loads(r.text)
+    secrets_data = []
+    try:
+        secrets_data = secrets.get_data(deployment_id, repo)
+    except Exception as e:
+        logging.error(e)
+        logging.info(f'Getting secrets data failed')
 
     # create folder reports/EPOCH_TIME
     output_folder = os.path.join(os.getcwd(), "reports", EPOCH_TIME)  # Define the output path
     os.makedirs(output_folder, exist_ok=True)
 
-    # Construct the full path for the output file
+    # Construct the full path for the SAST output file
     output_filename = re.sub(r"[^\w\s]", "_", repo) + "-" + EPOCH_TIME + ".json"
     file_path = os.path.join(output_folder, output_filename)
 
+    # Construct the full path for the Secrets output file
+    secrets_output_filename = re.sub(r"[^\w\s]", "_", repo) + "-" + "secrets-" + EPOCH_TIME + ".json"
+    secrets_file_path = os.path.join(output_folder, secrets_output_filename)
+    if len(secrets_data):
+        secrets.generate_reports(secrets_data, secrets_file_path, repo, EPOCH_TIME)
+    else:
+        logging.info(f"No secrets finding in the repo - {repo}")
+
     if FILTER_IMPORTANT_FINDINGS == True:
-        logging.info("Filtering Important findings for requested project/repo: " + project_name)
+        logging.info("Filtering Important findings for requested project/repo: " + repo)
         data = [obj for obj in data['findings'] if obj["severity"] == "high" and obj["confidence"] == "high" or obj["confidence"] == "medium"]
     else:
         logging.info("All findings for requested project/repo: " + repo)
@@ -127,23 +143,26 @@ def get_findings_per_repo(slug_name, repo):
         # Print the results
         logging.debug(f"severity_and_state_counts in repo: {repo} - {severity_and_state_counts}")
         logging.debug(f" {severity_and_state_counts_all_repos} ")
- 
+
+        # Modify the severity to critical when both severity and confidence are high
+        data = adjust_severity_class(data)
+
         with open(file_path, "w") as file:
             json.dump(data, file)
             logging.info("Findings for requested project/repo: " + repo + "written to: " + file_path)
-    
+
         logging.info (f"starting process to convert JSON file to csv & xlsx for repo {repo}")
-        
+
         output_name = re.sub(r"[^\w\s]", "_", repo)
         logging.debug ("output_name: " + output_name)
         json_file = output_name + "-" + EPOCH_TIME +  ".json"
-        json_file_path = os.path.join(output_folder, json_file)        
+        json_file_path = os.path.join(output_folder, json_file)
         csv_file = output_name + "-" + EPOCH_TIME + ".csv"
-        csv_file_path = os.path.join(output_folder, csv_file)        
+        csv_file_path = os.path.join(output_folder, csv_file)
         xlsx_file = output_name + "-" + EPOCH_TIME + ".xlsx"
-        xlsx_file_path = os.path.join(output_folder, xlsx_file)        
+        xlsx_file_path = os.path.join(output_folder, xlsx_file)
         html_file = output_name + "-" + EPOCH_TIME +  ".html"
-        html_file_path = os.path.join(output_folder, html_file)        
+        html_file_path = os.path.join(output_folder, html_file)
         pdf_file = output_name + "-" + EPOCH_TIME +  ".pdf"
         pdf_file_path = os.path.join(output_folder, pdf_file)
 
@@ -158,6 +177,7 @@ def get_findings_per_repo(slug_name, repo):
 def count_severity_and_state(data):
     # Initialize counters for each severity level and each state within that level
     counts = {
+        'critical': {'muted': 0, 'fixed': 0, 'removed': 0, 'unresolved': 0},
         'high': {'muted': 0, 'fixed': 0, 'removed': 0, 'unresolved': 0},
         'medium': {'muted': 0, 'fixed': 0, 'removed': 0, 'unresolved': 0},
         'low': {'muted': 0, 'fixed': 0, 'removed': 0, 'unresolved': 0}
@@ -166,8 +186,12 @@ def count_severity_and_state(data):
     # Iterate through each item in the data
     for item in data:
         severity = item.get('severity')  # Get the severity of the current item
+        confidence = item.get('confidence')  # Get the confidence of the current item
         state = item.get('state')  # Get the state of the current item
 
+        # Bump the severity to a critical is severity and confidence are both high
+        if severity == 'high' and confidence == 'high':
+            severity = 'critical'
         # Check if the severity and state are recognized, then increment the appropriate counter
         if severity in counts and state in counts[severity]:
             counts[severity][state] += 1
@@ -178,7 +202,7 @@ def count_vulnerability_classes_and_owasp_top_10(data):
     # Initialize a dictionary to keep count of each vulnerability class
     vulnerability_counts = {}
     owasp_top10_counts = {}
-    
+
     # Iterate over each finding in the JSON object
     for finding in data:
         # Extract the vulnerability classes for the current finding
@@ -186,7 +210,7 @@ def count_vulnerability_classes_and_owasp_top_10(data):
         owasp_top10_categories = finding['rule']['owasp_names']
         severity = finding['severity']
         state = finding['state']
-        
+
         # Iterate over each vulnerability class in the current finding
         #  we are only interested in open findings with high severity
         if (severity=="high" and state=="unresolved"):
@@ -217,7 +241,7 @@ def json_to_df(json_file):
 
 
     # filter out only specific columns
-    df = df.loc[:, [ 'Finding Title', 'Finding Description & Remediation', 'state', 'First Seen', 'severity', 'confidence',  'triage_state', 'triaged_at', 'triage_comment', 'state_updated_at', 'repository',  'location' ]] 
+    df = df.loc[:, [ 'Finding Title', 'Finding Description & Remediation', 'state', 'status', 'First Seen', 'severity', 'confidence',  'triage_state', 'triaged_at', 'triage_comment', 'state_updated_at', 'repository',  'location' ]]
     logging.info("Findings converted to DF from JSON file : " + json_file)
 
     return df
@@ -233,7 +257,7 @@ def json_to_df_html(json_file):
 def json_to_csv_pandas(json_file, csv_file):
 
     df = json_to_df(json_file)
-    
+
     df = df.rename(columns={'rule_name' : 'Finding Title' , 'rule_message'  : 'Finding Description & Remediation', 'relevant_since' : 'First Seen'})
 
     # Write the DataFrame to CSV
@@ -281,30 +305,31 @@ def process_sast_findings(df: pd.DataFrame, html_filename, pdf_filename, repo_na
     # logging.debug("The Column Header :", column_headers)
 
     # # list of columns of interest to include in the report
-    # 'state', 'first_seen_scan_id', 'triage_state', 'severity', 'confidence', 'First Seen', 'Finding Title', 
-    # 'Finding Description & Remediation', 'triaged_at', 'triage_comment', 'state_updated_at', 'categories', 
+    # 'state', 'first_seen_scan_id', 'triage_state', 'severity', 'confidence', 'First Seen', 'Finding Title',
+    # 'Finding Description & Remediation', 'triaged_at', 'triage_comment', 'state_updated_at', 'categories',
     # 'repository.name', 'repository.url', 'location.file_path', 'location.line', 'location.column', 'location.end_line', 'location.end_column', 'sourcing_policy.id', 'sourcing_policy.name', 'sourcing_policy.slug'],
     interesting_columns_sast = [
-        # 'First Seen', 
-        'Finding Title', 
+        # 'First Seen',
+        'Finding Title',
         'Finding Description & Remediation',
         'severity',
         'state',
-        'repository.name', 
-        'repository.url', 
-        'location.file_path', 
+        'status',
+        'repository.name',
+        'repository.url',
+        'location.file_path',
         'location.line',
         'ref',
         # 'finding_hyperlink',
         # 'extra.severity',
-        # 'extra.metadata.confidence', 
+        # 'extra.metadata.confidence',
         # 'extra.metadata.semgrep.url',
         # 'extra.metadata.likelihood',
         # 'extra.metadata.impact',
         # 'extra.metadata.owasp',
-        # 'extra.metadata.cwe', 
-        # 'extra.metadata.cwe2021-top25', 
-        # 'extra.metadata.cwe2022-top25', 
+        # 'extra.metadata.cwe',
+        # 'extra.metadata.cwe2021-top25',
+        # 'extra.metadata.cwe2022-top25',
     ]
 
     START_ROW = 0
@@ -352,13 +377,18 @@ def process_sast_findings(df: pd.DataFrame, html_filename, pdf_filename, repo_na
     text_format = workbook.add_format({'text_wrap' : True})
 
     # Make the text columns width = 48 & add text wrap for clarity
-    worksheet.set_column(0, max_col - 1, 48, text_format) 
+    worksheet.set_column(0, max_col - 1, 48, text_format)
 
     # Make the message columns width = 96 & add text wrap for clarity
-    worksheet.set_column(1, 1, 96, text_format) 
+    worksheet.set_column(1, 1, 96, text_format)
 
-    # Make the severity, confidence, likelyhood & impact columns width = 12 
+    # Make the severity, confidence, likelyhood & impact columns width = 12
     worksheet.set_column(4, 7, 12)
+
+    # #  create new df_critical by filtering df_red for CRITICAL severity
+    df_critical = df_red.loc[(df_red['severity'] == 'critical')]
+    # Create a list of column headers, to use in add_table().
+    column_settings = [{"header": column.split(".")[-1]} for column in df_critical.columns]
 
     # #  create new df_high by filtering df_red for HIGH severity
     df_high = df_red.loc[(df_red['severity'] == 'high')]
@@ -379,8 +409,8 @@ def process_sast_findings(df: pd.DataFrame, html_filename, pdf_filename, repo_na
     writer.close()
 
     # generate the HTML from the dataframe
-    html = file_handling_helpers.generate_html_sast(df_high, df_med, df_low, repo_name)
-    
+    html = file_handling_helpers.generate_html_sast(df_critical, df_high, df_med, df_low, repo_name)
+
     # write the HTML content to an HTML file
     open(html_filename, "w").write(html)
 
@@ -403,6 +433,16 @@ def json_to_html_pandas(json_file, html_file, pdf_file, repo_name):
     process_sast_findings(df, html_file, pdf_file, repo_name)
 
     logging.info("Findings converted from JSON file : " + json_file + " to HTML File: " + html_file)
+
+def adjust_severity_class(data):
+    for item in data:
+        severity = item.get('severity')  # Get the severity of the current item
+        confidence = item.get('confidence')  # Get the confidence of the current item
+
+        if severity == 'high' and confidence == 'high':
+            item['severity'] = 'critical'
+
+    return data
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
@@ -429,6 +469,6 @@ if __name__ == "__main__":
             logging.debug(arg)
             interesting_tag = arg
 
-    slug_name = get_deployments()
-    get_projects(slug_name, interesting_tag)
+    slug_name, deployment_id = get_deployments()
+    get_projects(slug_name, deployment_id, interesting_tag)
     logging.info ("completed conversion process")

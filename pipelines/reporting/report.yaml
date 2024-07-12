@@ -1,12 +1,13 @@
+name: semgrep-pipeline-reporting
 trigger: none
 
 schedules:
-- cron: '0 0 * * SUN'
-  displayName: Weekly Run at Midnight
-  always: true
-  branches:
-    include:
-    - main
+  - cron: "0 0 * * *"
+    displayName: Daily Run at Midnight
+    always: true
+    branches:
+      include:
+        - main
 
 stages:
   - stage:
@@ -28,7 +29,7 @@ stages:
           - script: |
               sudo apt-get install wkhtmltopdf
             displayName: "Install wkhtmltopdf"
-          
+
           - task: UsePythonVersion@0
             inputs:
               versionSpec: "3.11"
@@ -49,7 +50,7 @@ stages:
             workingDirectory: reporting
             env:
               SEMGREP_API_WEB_TOKEN: $(SEMGREP_API_WEB_TOKEN)
-          
+
           - task: PublishPipelineArtifact@1
             inputs:
               targetPath: $(reportOutputPath)
