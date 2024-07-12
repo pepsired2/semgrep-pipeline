@@ -1,5 +1,5 @@
 pool:
-  name: semgrep-pipeline-agent-pool
+  vmImage: "ubuntu-latest"
 
 trigger: none
 
