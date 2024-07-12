@@ -98,7 +98,7 @@ stages:
             workingDirectory: $(scanningRepositoryPath)/scanning
 
           - script: |
-              /root/.local/bin/pipenv run python src/semgrep_scan.py
+              pipenv run python src/semgrep_scan.py
             displayName: "Run Semgrep Scan"
             workingDirectory: $(scanningRepositoryPath)/scanning
             env:
