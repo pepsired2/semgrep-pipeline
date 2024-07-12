@@ -61,7 +61,6 @@ def diff_scan():
         export SEMGREP_REPO_URL={repo_url} && \\
         export BUILD_BUILDID={build_id} && \\
         export SEMGREP_COMMIT={semgrep_commit} && \\
-        semgrep login && \\
         ls && \\
         ls azp && \\
         cd {scan_target_path} && \\
