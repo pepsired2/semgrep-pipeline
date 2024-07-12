@@ -1,18 +1,19 @@
+pool:
+  name: semgrep-pipeline-agent-pool
+
 trigger: none
 
 schedules:
-- cron: '0 * * * *'
-  displayName: Hourly run
-  always: true
-  branches:
-    include:
-    - main
+  - cron: "0 * * * *"
+    displayName: Hourly run
+    always: true
+    branches:
+      include:
+        - main
 
 stages:
   - stage:
     displayName: Create Full Scan Schedule for Semgrep Full Scans
-    pool:
-      vmImage: "ubuntu-latest"
     variables:
       - group: semgrep-pipeline-vg
       - name: fullScanDirectory
@@ -26,7 +27,7 @@ stages:
           - checkout: self
             clean: true
             displayName: "Checkout Scanning Repository"
-          
+
           - task: UseNode@1
             inputs:
               version: "20.x"
@@ -45,7 +46,7 @@ stages:
               ADO_ORG_URL: $(ADO_ORG_URL)
               AZURE_TOKEN: $(AZURE_TOKEN)
               SCHEDULE_OUTPUT_PATH: $(scheduleOutputPath)
-          
+
           - task: PublishPipelineArtifact@1
             inputs:
               targetPath: $(scheduleOutputPath)

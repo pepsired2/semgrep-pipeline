@@ -1,3 +1,6 @@
+pool:
+  name: semgrep-pipeline-agent-pool
+
 trigger: none
 
 parameters:
@@ -40,8 +43,6 @@ parameters:
 
 stages:
   - stage: Semgrep
-    pool:
-      vmImage: "ubuntu-latest"
     variables:
       - group: semgrep-pipeline-vg
       - name: scanTargetPath

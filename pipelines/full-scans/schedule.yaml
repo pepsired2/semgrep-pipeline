@@ -1,19 +1,20 @@
+pool:
+  name: semgrep-pipeline-agent-pool
+
 trigger: none
 
 resources:
   pipelines:
-  - pipeline: configuration
-    source: configuration
-    trigger:
-      branches:
-        include:
-        - main
+    - pipeline: configuration
+      source: configuration
+      trigger:
+        branches:
+          include:
+            - main
 
 stages:
   - stage:
     displayName: Schedule Semgrep Full Scans
-    pool:
-      vmImage: "ubuntu-latest"
     variables:
       - group: semgrep-pipeline-vg
       - name: fullScanDirectory
@@ -36,7 +37,7 @@ stages:
 
           - download: configuration
             artifact: $(fullScanScheduleArtifactName)
-          
+
           - task: UseNode@1
             inputs:
               version: "20.x"
@@ -59,7 +60,7 @@ stages:
               FULL_SCAN_CONFIG_PATH: $(fullScanConfigPath)
               SCAN_PIPELINE_PROJECT_ID: $(SCAN_PIPELINE_PROJECT_ID)
               SCAN_PIPELINE_ID: $(SCAN_PIPELINE_ID)
-          
+
           - task: PublishPipelineArtifact@1
             inputs:
               targetPath: $(fullScanResultsOutputPath)
