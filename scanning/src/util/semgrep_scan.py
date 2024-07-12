@@ -64,6 +64,7 @@ def diff_scan():
         semgrep login && \\
         ls && \\
         ls azp && \\
+        cd {scan_target_path} && \\
         semgrep ci --json -o {output_directory}/semgrep-results.json --verbose
     """.format(
         semgrep_app_token=semgrep_diff_scan_config.semgrep_app_token,
@@ -74,6 +75,7 @@ def diff_scan():
         repo_url=semgrep_diff_scan_config.repository_web_url,
         build_id=semgrep_diff_scan_config.build_buildid,
         semgrep_commit=semgrep_diff_scan_config.last_merge_commit_id,
+        scan_target_path=semgrep_diff_scan_config.scan_target_path,
         output_directory=semgrep_diff_scan_config.output_directory
     )
     semgrep_return_code = run_command(ci_command)
