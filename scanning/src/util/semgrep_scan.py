@@ -62,7 +62,7 @@ def diff_scan():
         export BUILD_BUILDID={build_id} && \\
         export SEMGREP_COMMIT={semgrep_commit} && \\
         ls && \\
-        cd {scan_target_path} && \\
+        pwd && \\
         semgrep ci --json -o {output_directory}/semgrep-results.json --verbose
     """.format(
         semgrep_app_token=semgrep_diff_scan_config.semgrep_app_token,
