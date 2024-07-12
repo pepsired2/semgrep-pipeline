@@ -62,7 +62,6 @@ def diff_scan():
         export BUILD_BUILDID={build_id} && \\
         export SEMGREP_COMMIT={semgrep_commit} && \\
         ls && \\
-        ls azp && \\
         cd {scan_target_path} && \\
         semgrep ci --json -o {output_directory}/semgrep-results.json --verbose
     """.format(
