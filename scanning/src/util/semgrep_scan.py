@@ -61,8 +61,8 @@ def diff_scan():
         export SEMGREP_REPO_URL={repo_url} && \\
         export BUILD_BUILDID={build_id} && \\
         export SEMGREP_COMMIT={semgrep_commit} && \\
-        python3.11 -m semgrep login && \\
-        python3.11 -m semgrep ci --json -o {output_directory}/semgrep-results.json --verbose --config auto
+        semgrep login && \\
+        semgrep ci --json -o {output_directory}/semgrep-results.json --verbose --config auto
     """.format(
         semgrep_app_token=semgrep_diff_scan_config.semgrep_app_token,
         semgrep_repo_display_name=semgrep_diff_scan_config.repository_display_Name,

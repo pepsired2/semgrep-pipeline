@@ -93,7 +93,7 @@ stages:
               python3.11 -m pip install --upgrade pip
               python3.11 -m pip install pipenv semgrep
               semgrep --version
-              /root/.local/bin/pipenv install --ignore-pipfile
+              pipenv install --ignore-pipfile
             displayName: "Install Python Dependencies"
             workingDirectory: $(scanningRepositoryPath)/scanning
 
