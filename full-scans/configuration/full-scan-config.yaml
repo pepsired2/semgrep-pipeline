@@ -25,5 +25,5 @@
 overrides: []
 includedRepositories: []
 excludedRepositories: []
-includedProjects: []
+includedProjects: ["GNRM_PromoAI_Pricing", "Commercial_IT"]
 excludedProjects: []
