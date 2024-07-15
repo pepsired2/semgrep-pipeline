@@ -25,33 +25,6 @@ def diff_scan():
     print(f"Running DIFF scan for changes on branch {semgrep_diff_scan_config.source_ref_name} at commit {semgrep_diff_scan_config.last_merge_commit_id} from commit {semgrep_diff_scan_config.last_merge_target_commit_id}.")
     print(f"New findings configured to comment/block will post to PRs:")
     print(f"  - {semgrep_diff_scan_config.pull_request_id}")
-    # docker_command = """
-    #     docker run \\
-    #         -v "{scan_target_path}:/src" \\
-    #         -v "{output_directory}:/output" \\
-    #         -v /var/run/docker.sock:/var/run/docker.sock \\
-    #         -e "SEMGREP_APP_TOKEN={semgrep_app_token}" \\
-    #         -e "SEMGREP_REPO_DISPLAY_NAME={semgrep_repo_display_name}" \\
-    #         -e "SEMGREP_PR_ID={semgrep_pr_id}" \\
-    #         -e "SEMGREP_BASELINE_REF={semgrep_baseline_ref}" \\
-    #         -e "SEMGREP_BRANCH={source_branch}" \\
-    #         -e "SEMGREP_REPO_URL={repo_url}" \\
-    #         -e "BUILD_BUILDID={build_id}" \\
-    #         -e "SEMGREP_COMMIT={semgrep_commit}" \\
-    #         -i semgrep/semgrep semgrep ci --json -o /output/semgrep-results.json --verbose
-    #     """.format(
-    #         scan_target_path = semgrep_diff_scan_config.scan_target_path,
-    #         output_directory = semgrep_diff_scan_config.output_directory,
-    #         semgrep_app_token = semgrep_diff_scan_config.semgrep_app_token,
-    #         semgrep_repo_display_name = semgrep_diff_scan_config.repository_display_Name,
-    #         semgrep_pr_id = semgrep_diff_scan_config.pull_request_id,
-    #         semgrep_baseline_ref = semgrep_diff_scan_config.last_merge_target_commit_id,
-    #         source_branch = semgrep_diff_scan_config.source_ref_name.split('/')[-1],
-    #         repo_url = semgrep_diff_scan_config.repository_web_url,
-    #         build_id = semgrep_diff_scan_config.build_buildid,
-    #         semgrep_commit = semgrep_diff_scan_config.last_merge_commit_id
-    #     )
-
     ci_command = """
         export SEMGREP_APP_TOKEN={semgrep_app_token} && \\
         export SEMGREP_REPO_DISPLAY_NAME={semgrep_repo_display_name} && \\
@@ -61,10 +34,7 @@ def diff_scan():
         export SEMGREP_REPO_URL={repo_url} && \\
         export BUILD_BUILDID={build_id} && \\
         export SEMGREP_COMMIT={semgrep_commit} && \\
-        ls && \\
-        pwd && \\
         cd {scan_target_path} && \\
-        ls && \\
         semgrep ci --json -o {output_directory}/semgrep-results.json --verbose
     """.format(
         semgrep_app_token=semgrep_diff_scan_config.semgrep_app_token,
@@ -83,24 +53,41 @@ def diff_scan():
 
 def full_scan():
     print(f"Running FULL scan.")
-    docker_command = """
-        docker run \\
-            -v "{scan_target_path}:/src" \\
-            -v "{output_directory}:/output" \\
-            -e "SEMGREP_APP_TOKEN={semgrep_app_token}" \\
-            -e "SEMGREP_REPO_DISPLAY_NAME={semgrep_repo_display_name}" \\
-            -e "SEMGREP_REPO_URL={repo_url}" \\
-            -i semgrep/semgrep {semgrep_command}
-        """.format(
-            scan_target_path = semgrep_full_scan_config.scan_target_path,
-            output_directory = semgrep_full_scan_config.output_directory,
-            semgrep_app_token=semgrep_full_scan_config.semgrep_app_token,
-            semgrep_repo_display_name=semgrep_full_scan_config.repository_display_Name,
-            repo_url = semgrep_full_scan_config.repository_web_url,
-            semgrep_command = _get_full_scan_command()
-        )
+    # docker_command = """
+    #     docker run \\
+    #         -v "{scan_target_path}:/src" \\
+    #         -v "{output_directory}:/output" \\
+    #         -e "SEMGREP_APP_TOKEN={semgrep_app_token}" \\
+    #         -e "SEMGREP_REPO_DISPLAY_NAME={semgrep_repo_display_name}" \\
+    #         -e "SEMGREP_REPO_URL={repo_url}" \\
+    #         -i semgrep/semgrep {semgrep_command}
+    #     """.format(
+    #         scan_target_path = semgrep_full_scan_config.scan_target_path,
+    #         output_directory = semgrep_full_scan_config.output_directory,
+    #         semgrep_app_token=semgrep_full_scan_config.semgrep_app_token,
+    #         semgrep_repo_display_name=semgrep_full_scan_config.repository_display_Name,
+    #         repo_url = semgrep_full_scan_config.repository_web_url,
+    #         semgrep_command = _get_full_scan_command()
+    #     )
 
-    semgrep_return_code = run_command(docker_command)
+    ci_command = """
+        export SEMGREP_APP_TOKEN={semgrep_app_token} && \\
+        export SEMGREP_REPO_DISPLAY_NAME={semgrep_repo_display_name} && \\
+        export SEMGREP_REPO_URL={repo_url} && \\
+        export BUILD_BUILDID={build_id} && \\
+        cd {scan_target_path} && \\
+        {semgrep_command}
+    """.format(
+        semgrep_app_token=semgrep_full_scan_config.semgrep_app_token,
+        semgrep_repo_display_name=semgrep_full_scan_config.repository_display_Name,
+        repo_url=semgrep_full_scan_config.repository_web_url,
+        build_id=semgrep_full_scan_config.build_buildid,
+        scan_target_path=semgrep_full_scan_config.scan_target_path,
+        output_directory=semgrep_full_scan_config.output_directory,
+        semgrep_command=_get_full_scan_command()
+    )
+
+    semgrep_return_code = run_command(ci_command)
     return semgrep_return_code
 
 def _get_full_scan_command():
