@@ -4,6 +4,7 @@ import json
 from config.settings import BaseConfig
 import util.azure as azure
 import util.semgrep_scan as semgrep
+import util.semgrep_finding as futil
 
 config = BaseConfig()
 def log_start():
@@ -35,7 +36,7 @@ def main():
         #                 print(f"Posting to PR #{config.pull_request_id} comment for new finding: {finding}")
         #                 azure.add_inline_comment(config.pull_request_id, finding)
         # except FileNotFoundError:
-        #     print(f"Semgrep results file not found. No comments will be posted to the PR.")
+
     elif config.scan_type == "full":
         semgrep_exit_code = semgrep.full_scan()
     else:
