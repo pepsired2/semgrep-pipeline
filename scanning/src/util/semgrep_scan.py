@@ -83,15 +83,14 @@ def full_scan():
         repo_url=semgrep_full_scan_config.repository_web_url,
         build_id=semgrep_full_scan_config.build_buildid,
         scan_target_path=semgrep_full_scan_config.scan_target_path,
-        output_directory=semgrep_full_scan_config.output_directory,
-        semgrep_command=_get_full_scan_command()
+        semgrep_command=_get_full_scan_command(semgrep_full_scan_config.output_directory)
     )
 
     semgrep_return_code = run_command(ci_command)
     return semgrep_return_code
 
-def _get_full_scan_command():
-    semgrep_command = "semgrep ci --json -o /output/semgrep-results.json"
+def _get_full_scan_command(output_dir):
+    semgrep_command = f"semgrep ci --json -o {output_dir}/semgrep-results.json"
     if (semgrep_full_scan_config.jobs != DEFAULT_JOB_COUNT):
         semgrep_command += f" --jobs {semgrep_full_scan_config.jobs}"
     if (semgrep_full_scan_config.max_memory != DEFAULT_MAX_MEMORY):
