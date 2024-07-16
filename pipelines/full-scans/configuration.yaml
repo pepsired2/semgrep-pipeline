@@ -9,7 +9,7 @@ schedules:
     always: true
     branches:
       include:
-        - main
+        - feature/no-comments
 
 stages:
   - stage:
