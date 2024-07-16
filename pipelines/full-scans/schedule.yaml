@@ -13,8 +13,8 @@ schedules:
 
 resources:
   pipelines:
-    - pipeline: configuration
-      source: configuration
+    - pipeline: semgrep-configuration
+      source: semgrep-configuration
 
 stages:
   - stage:
