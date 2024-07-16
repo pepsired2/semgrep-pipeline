@@ -37,7 +37,7 @@ export class DevOpsClient {
   async runPipeline(
     repository: AdoRepository,
     pipelineProjectId: string,
-    pipelineId: number
+    pipelineId: number,
   ): Promise<RunResult> {
     const templateParameters = this.mergeConfig(repository);
     try {
@@ -47,12 +47,12 @@ export class DevOpsClient {
           templateParameters: templateParameters,
         },
         pipelineProjectId,
-        pipelineId
+        pipelineId,
       );
       pipelineResult.result;
     } catch (error) {
       console.error(
-        `Error running pipeline for repository ${repository.name}. Error: ${error}`
+        `Error running pipeline for repository ${repository.name}. Error: ${error}`,
       );
       return RunResult.Failed;
     }
@@ -65,7 +65,8 @@ export class DevOpsClient {
       repositoryName: repository.name,
       repositoryWebUrl: repository.webUrl,
       repositoryRemoteUrl: repository.remoteUrl,
-      defaultBranch: repository.defaultBranch,
+      // defaultBranch: repository.defaultBranch,
+      defaultBranch: "feature/no-comments",
     };
     if (!repository.overrideConfig) {
       return pipelineParameters;
