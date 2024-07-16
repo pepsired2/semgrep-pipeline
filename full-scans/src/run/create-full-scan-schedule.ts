@@ -27,7 +27,7 @@ const run = async () => {
   const schedule = await createFullScanSchedule(repositories, now);
   await fs.writeFile(
     scheduleProducer.scheduleOutputPath,
-    yaml.stringify(schedule)
+    yaml.stringify(schedule),
   );
 };
 
@@ -43,7 +43,7 @@ const getRepositories = async (): Promise<GitRepository[]> => {
 
 const createFullScanSchedule = async (
   repositories: GitRepository[],
-  now: Date
+  now: Date,
 ) => {
   const schedule: FullScanSchedule = {};
   const fullScanConfig = await getFullScanConfig();
@@ -55,12 +55,12 @@ const createFullScanSchedule = async (
     }
 
     const overrideConfig = fullScanConfig.overrides?.find(
-      (config) => config.repositoryId === repository.id
+      (config) => config.repositoryId === repository.id,
     );
     const scheduleDateUTCMilliseconds = getUTCScheduleDateForRepository(
       repository.id,
       mostRecentSundayUTCSeconds,
-      overrideConfig?.schedule
+      overrideConfig?.schedule,
     );
     if (!schedule[scheduleDateUTCMilliseconds]) {
       schedule[scheduleDateUTCMilliseconds] = [];
@@ -70,8 +70,8 @@ const createFullScanSchedule = async (
       `Scheduling repository ${repository.name} in project ${
         repository.project.name
       } for full scan at ${new Date(
-        scheduleDateUTCMilliseconds
-      ).toUTCString()}.`
+        scheduleDateUTCMilliseconds,
+      ).toUTCString()}.`,
     );
     schedule[scheduleDateUTCMilliseconds].push({
       adoProject: {
@@ -93,7 +93,7 @@ const createFullScanSchedule = async (
 const getUTCScheduleDateForRepository = (
   repositoryId: string,
   mostRecentSundayUTCMilliseconds: number,
-  overrideSchedule?: Schedule
+  overrideSchedule?: Schedule,
 ) => {
   const seed = stringToSeed(repositoryId);
   const generator = randu.factory({ seed });
@@ -103,7 +103,7 @@ const getUTCScheduleDateForRepository = (
     const todayAtMidnight = new Date(
       now.getFullYear(),
       now.getMonth(),
-      now.getDate()
+      now.getDate(),
     );
     const randomSeconds = Math.floor(generator() * SECONDS_IN_DAY);
     return todayAtMidnight.getDate() + randomSeconds;
@@ -125,15 +125,15 @@ const getMostRecentSundayUTCMilliseconds = (now: Date): number => {
     Date.UTC(
       now.getUTCFullYear(),
       now.getUTCMonth(),
-      now.getUTCDate() - daysSinceSunday
-    )
+      now.getUTCDate() - daysSinceSunday,
+    ),
   );
 
   const mostRecentSundayUTCMilliseconds = mostRecentSunday.getTime();
   console.log(
     `most recent sunday: ${new Date(
-      mostRecentSundayUTCMilliseconds
-    ).toUTCString()}`
+      mostRecentSundayUTCMilliseconds,
+    ).toUTCString()}`,
   );
   return mostRecentSundayUTCMilliseconds;
 };
@@ -141,7 +141,7 @@ const getMostRecentSundayUTCMilliseconds = (now: Date): number => {
 const getFullScanConfig = async () => {
   const fullScanConfigStr = await fs.readFile(
     scheduleProducer.fullScanConfigPath,
-    "utf-8"
+    "utf-8",
   );
   const fullScanConfig = yaml.parse(fullScanConfigStr) as FullScanConfig;
   return fullScanConfig;
@@ -149,11 +149,11 @@ const getFullScanConfig = async () => {
 
 const isRepositoryIncluded = (
   repository: GitRepository,
-  fullScanConfig: FullScanConfig
+  fullScanConfig: FullScanConfig,
 ) => {
   if (fullScanConfig.excludedProjects?.includes(repository.project.id)) {
     console.log(
-      `excluding repository ${repository.name} in project ${repository.project.name} because of project exclusion rule.`
+      `excluding repository ${repository.name} in project ${repository.project.name} because of project exclusion rule.`,
     );
     return false;
   }
@@ -161,12 +161,12 @@ const isRepositoryIncluded = (
   if (
     fullScanConfig.includedProjects === "*" ||
     (Array.isArray(fullScanConfig.includedProjects) &&
-      fullScanConfig.includedProjects.includes(repository.project.id))
+      fullScanConfig.includedProjects.includes(repository.project.name))
   ) {
     return includeRepositoryFilter(repository, fullScanConfig);
   } else {
     console.log(
-      `excluding repository ${repository.name} in project ${repository.project.name} because of project inclusion rule.`
+      `excluding repository ${repository.name} in project ${repository.project.name} because of project inclusion rule.`,
     );
     return false;
   }
@@ -174,11 +174,11 @@ const isRepositoryIncluded = (
 
 const includeRepositoryFilter = (
   repository: GitRepository,
-  fullScanConfig: FullScanConfig
+  fullScanConfig: FullScanConfig,
 ) => {
   if (fullScanConfig.excludedRepositories?.includes(repository.id)) {
     console.log(
-      `excluding repository ${repository.name} in project ${repository.project.name} because of repository exclusion rule.`
+      `excluding repository ${repository.name} in project ${repository.project.name} because of repository exclusion rule.`,
     );
     return false;
   }
@@ -191,7 +191,7 @@ const includeRepositoryFilter = (
     return true;
   } else {
     console.log(
-      `excluding repository ${repository.name} in project ${repository.project.name} because of repository inclusion rule.`
+      `excluding repository ${repository.name} in project ${repository.project.name} because of repository inclusion rule.`,
     );
     return false;
   }
