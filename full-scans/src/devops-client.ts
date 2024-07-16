@@ -65,8 +65,7 @@ export class DevOpsClient {
       repositoryName: repository.name,
       repositoryWebUrl: repository.webUrl,
       repositoryRemoteUrl: repository.remoteUrl,
-      // defaultBranch: repository.defaultBranch,
-      defaultBranch: "feature/no-comments",
+      defaultBranch: repository.defaultBranch,
     };
     if (!repository.overrideConfig) {
       return pipelineParameters;
