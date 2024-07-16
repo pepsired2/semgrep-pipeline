@@ -41,7 +41,7 @@ stages:
             clean: true
             displayName: "Checkout Scanning Repository"
 
-          - download: configuration
+          - download: semgrep-configuration
             artifact: $(fullScanScheduleArtifactName)
 
           - task: UseNode@1
