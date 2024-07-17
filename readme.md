@@ -5,7 +5,7 @@ This project provides resources for running semgrep scans in Azure DevOps pipeli
 ## Changes from the upstream
 - PR comments are disabled.
 - Self-hosted runner is used.
-- Misc. improvements to the reporting logic.
+- Misc. changes to reporting logic.
 
 ## Project Outline
 - [scanning](/scanning/): Contains a python application that runs a semgrep scan, processes results, and posts findings as comments on Pull Requests. The application is meant to be called from an Azure DevOps pipeline within the `pipelines` folder.
