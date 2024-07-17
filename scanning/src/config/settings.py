@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 DEFAULT_JOB_COUNT = -1
 DEFAULT_MAX_MEMORY = -1
-   
+
 class BaseConfig(BaseSettings):
     repository_id: str
     repository_name: str
@@ -13,6 +13,7 @@ class BaseConfig(BaseSettings):
     repository_display_Name: str
     scan_type: str
     build_buildid: int = Field(validation_alias=AliasChoices('BUILD_BUILDID'))
+    enable_pr_comments: bool = False
 
 class AzureDevOpsConfig(BaseConfig):
     azure_token: str
@@ -40,4 +41,3 @@ class SemgrepFullScanConfig(SemgrepScanConfig):
     semgrep_code: bool = True
     semgrep_secrets: bool = True
     semgrep_supply_chain: bool = True
-    
