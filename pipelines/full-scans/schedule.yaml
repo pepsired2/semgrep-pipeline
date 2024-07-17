@@ -1,7 +1,10 @@
 pool:
   name: semgrep-pipeline-agent-pool
 
-trigger: none
+trigger:
+  branches:
+    exclude:
+      - main
 
 schedules:
   - cron: "*/15 * * * *"
