@@ -117,6 +117,7 @@ stages:
               SEMGREP_CODE: ${{ parameters.semgrepCode }}
               SEMGREP_SECRETS: ${{ parameters.semgrepSecrets }}
               SEMGREP_SUPPLY_CHAIN: ${{ parameters.semgrepSupplyChain }}
+              SOURCE_REF_NAME: ${{ parameters.defaultBranch }}
 
           - task: PublishPipelineArtifact@1
             inputs:

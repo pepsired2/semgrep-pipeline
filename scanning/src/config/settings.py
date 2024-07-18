@@ -41,3 +41,4 @@ class SemgrepFullScanConfig(SemgrepScanConfig):
     semgrep_code: bool = True
     semgrep_secrets: bool = True
     semgrep_supply_chain: bool = True
+    source_ref_name : str
