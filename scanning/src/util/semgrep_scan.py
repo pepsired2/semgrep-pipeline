@@ -14,7 +14,7 @@ def run_command(command, scan_target_path, scan_type):
         # Update with custom environment variables
         custom_env.update({
             'SEMGREP_APP_TOKEN': semgrep_full_scan_config.semgrep_app_token,
-            'SEMGREP_REPO_DISPLAY_NAME': semgrep_full_scan_config.repository_display_name,
+            'SEMGREP_REPO_DISPLAY_NAME': semgrep_full_scan_config.repository_display_Name,
             'SEMGREP_REPO_URL': semgrep_full_scan_config.repository_web_url,
             'BUILD_BUILDID': str(semgrep_full_scan_config.build_buildid)
         })
