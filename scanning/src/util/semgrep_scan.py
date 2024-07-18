@@ -60,7 +60,13 @@ def diff_scan():
 
 def full_scan():
     print(f"Running FULL scan.")
-    semgrep_return_code = run_command(_get_full_scan_command(semgrep_full_scan_config.output_directory), semgrep_full_scan_config.scan_target_path, 1)
+    ci_command = """
+        {semgrep_command}
+    """.format(
+        semgrep_command=_get_full_scan_command(semgrep_full_scan_config.output_directory)
+    )
+
+    semgrep_return_code = run_command(ci_command, semgrep_full_scan_config.scan_target_path, 1)
     return semgrep_return_code
 
 def _get_full_scan_command(output_dir):

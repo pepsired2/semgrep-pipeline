@@ -1,11 +1,6 @@
 pool:
   name: semgrep-pipeline-agent-pool
 
-trigger:
-  branches:
-    exclude:
-      - main
-
 schedules:
   - cron: "*/15 * * * *"
     displayName: Every 15 minutes
