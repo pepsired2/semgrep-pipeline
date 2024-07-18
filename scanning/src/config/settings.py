@@ -42,3 +42,4 @@ class SemgrepFullScanConfig(SemgrepScanConfig):
     semgrep_secrets: bool = True
     semgrep_supply_chain: bool = True
     source_ref_name : str
+    latest_commit_id: str

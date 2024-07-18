@@ -76,6 +76,8 @@ stages:
                   echo "Using System.AccessToken for authentication with remote repository."
                   git config http.${{ parameters.repositoryRemoteUrl }}.extraheader "AUTHORIZATION: bearer $(System.AccessToken)"
               fi
+              echo "Fetching latest commit ID for default branch ${{ parameters.defaultBranch }}"
+              LATEST_COMMIT_ID=$(git ls-remote ${{ parameters.repositoryRemoteUrl }} ${{ parameters.defaultBranch }} | awk '{print $1}')
 
               echo "Checking out default branch ${{ parameters.defaultBranch }}"
               git fetch --force --tags --prune --prune-tags --progress --no-recurse-submodules origin --depth=1  +${{ parameters.defaultBranch }}:refs/remotes/origin/main
@@ -118,6 +120,7 @@ stages:
               SEMGREP_SECRETS: ${{ parameters.semgrepSecrets }}
               SEMGREP_SUPPLY_CHAIN: ${{ parameters.semgrepSupplyChain }}
               SOURCE_REF_NAME: ${{ parameters.defaultBranch }}
+              LATEST_COMMIT_ID: $LATEST_COMMIT_ID
 
           - task: PublishPipelineArtifact@1
             inputs:
