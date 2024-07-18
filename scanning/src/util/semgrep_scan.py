@@ -5,9 +5,9 @@ from config.settings import DEFAULT_JOB_COUNT, DEFAULT_MAX_MEMORY, SemgrepDiffSc
 
 semgrep_diff_scan_config = SemgrepDiffScanConfig()
 semgrep_full_scan_config = SemgrepFullScanConfig()
-def run_command(command):
+def run_command(command, scan_target_path):
     # Start the subprocess
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=scan_target_path)
 
     # Read one line at a time as it becomes available
     while True:
@@ -34,7 +34,6 @@ def diff_scan():
         export SEMGREP_REPO_URL={repo_url} && \\
         export BUILD_BUILDID={build_id} && \\
         export SEMGREP_COMMIT={semgrep_commit} && \\
-        cd {scan_target_path} && \\
         semgrep ci --json -o {output_directory}/semgrep-results.json --verbose
     """.format(
         semgrep_app_token=semgrep_diff_scan_config.semgrep_app_token,
@@ -45,48 +44,28 @@ def diff_scan():
         repo_url=semgrep_diff_scan_config.repository_web_url,
         build_id=semgrep_diff_scan_config.build_buildid,
         semgrep_commit=semgrep_diff_scan_config.last_merge_commit_id,
-        scan_target_path=semgrep_diff_scan_config.scan_target_path,
         output_directory=semgrep_diff_scan_config.output_directory
     )
-    semgrep_return_code = run_command(ci_command)
+    semgrep_return_code = run_command(ci_command, semgrep_diff_scan_config.scan_target_path)
     return semgrep_return_code
 
 def full_scan():
     print(f"Running FULL scan.")
-    # docker_command = """
-    #     docker run \\
-    #         -v "{scan_target_path}:/src" \\
-    #         -v "{output_directory}:/output" \\
-    #         -e "SEMGREP_APP_TOKEN={semgrep_app_token}" \\
-    #         -e "SEMGREP_REPO_DISPLAY_NAME={semgrep_repo_display_name}" \\
-    #         -e "SEMGREP_REPO_URL={repo_url}" \\
-    #         -i semgrep/semgrep {semgrep_command}
-    #     """.format(
-    #         scan_target_path = semgrep_full_scan_config.scan_target_path,
-    #         output_directory = semgrep_full_scan_config.output_directory,
-    #         semgrep_app_token=semgrep_full_scan_config.semgrep_app_token,
-    #         semgrep_repo_display_name=semgrep_full_scan_config.repository_display_Name,
-    #         repo_url = semgrep_full_scan_config.repository_web_url,
-    #         semgrep_command = _get_full_scan_command()
-    #     )
-
     ci_command = """
         export SEMGREP_APP_TOKEN={semgrep_app_token} && \\
         export SEMGREP_REPO_DISPLAY_NAME={semgrep_repo_display_name} && \\
         export SEMGREP_REPO_URL={repo_url} && \\
         export BUILD_BUILDID={build_id} && \\
-        cd {scan_target_path} && \\
         {semgrep_command}
     """.format(
         semgrep_app_token=semgrep_full_scan_config.semgrep_app_token,
         semgrep_repo_display_name=semgrep_full_scan_config.repository_display_Name,
         repo_url=semgrep_full_scan_config.repository_web_url,
         build_id=semgrep_full_scan_config.build_buildid,
-        scan_target_path=semgrep_full_scan_config.scan_target_path,
         semgrep_command=_get_full_scan_command(semgrep_full_scan_config.output_directory)
     )
 
-    semgrep_return_code = run_command(ci_command)
+    semgrep_return_code = run_command(ci_command, semgrep_full_scan_config.scan_target_path)
     return semgrep_return_code
 
 def _get_full_scan_command(output_dir):
