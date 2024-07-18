@@ -8,12 +8,16 @@ semgrep_full_scan_config = SemgrepFullScanConfig()
 def run_command(command, scan_target_path, scan_type):
     # Start the subprocess
     if scan_type == 1:
-        custom_env = {
+        # Start with a copy of the current environment
+        custom_env = os.environ.copy()
+
+        # Update with custom environment variables
+        custom_env.update({
             'SEMGREP_APP_TOKEN': semgrep_full_scan_config.semgrep_app_token,
-            'SEMGREP_REPO_DISPLAY_NAME': semgrep_full_scan_config.repository_display_Name,
+            'SEMGREP_REPO_DISPLAY_NAME': semgrep_full_scan_config.repository_display_name,
             'SEMGREP_REPO_URL': semgrep_full_scan_config.repository_web_url,
             'BUILD_BUILDID': str(semgrep_full_scan_config.build_buildid)
-        }
+        })
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=scan_target_path, env=custom_env)
     else:
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=scan_target_path)

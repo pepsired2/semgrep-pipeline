@@ -5,9 +5,6 @@ schedules:
   - cron: "*/15 * * * *"
     displayName: Every 15 minutes
     always: true
-    branches:
-      include:
-        - feature/no-comments
 
 resources:
   pipelines:
