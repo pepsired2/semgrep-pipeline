@@ -12,7 +12,7 @@ def run_command(command, scan_target_path, scan_type):
             'SEMGREP_APP_TOKEN': semgrep_full_scan_config.semgrep_app_token,
             'SEMGREP_REPO_DISPLAY_NAME': semgrep_full_scan_config.repository_display_Name,
             'SEMGREP_REPO_URL': semgrep_full_scan_config.repository_web_url,
-            'BUILD_BUILDID': semgrep_full_scan_config.build_buildid
+            'BUILD_BUILDID': str(semgrep_full_scan_config.build_buildid)
         }
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, cwd=scan_target_path, env=custom_env)
     else:
