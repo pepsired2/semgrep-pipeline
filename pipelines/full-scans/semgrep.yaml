@@ -82,6 +82,7 @@ stages:
               git checkout --progress --force refs/remotes/origin/main
               echo "running git clean"
               git clean -ffdx
+              echo $?
             displayName: "Checkout Target Scan Repository"
 
           - task: UsePythonVersion@0
