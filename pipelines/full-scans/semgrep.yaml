@@ -51,6 +51,8 @@ stages:
         value: semgrep-pipelines
       - name: scanningRepositoryPath
         value: $(Agent.BuildDirectory)/$(scanningRepositoryName)
+      - name: latestCommitIdFile
+        value: $(Pipeline.Workspace)/latest_commit_id.txt
     jobs:
       - job:
         displayName: Semgrep Full Scan
@@ -79,13 +81,13 @@ stages:
               echo "Fetching latest commit ID for default branch ${{ parameters.defaultBranch }}"
               LATEST_COMMIT_ID=$(git ls-remote ${{ parameters.repositoryRemoteUrl }} ${{ parameters.defaultBranch }} | awk '{print $1}')
               echo "Latest commit ID: $LATEST_COMMIT_ID"
-              echo $LATEST_COMMIT_ID > latest_commit_id.txt
 
               echo "Checking out default branch ${{ parameters.defaultBranch }}"
               git fetch --force --tags --prune --prune-tags --progress --no-recurse-submodules origin --depth=1  +${{ parameters.defaultBranch }}:refs/remotes/origin/main
               git checkout --progress --force refs/remotes/origin/main
               echo "running git clean"
               git clean -ffdx
+              echo $LATEST_COMMIT_ID > $(latestCommitIdFile)
               echo $?
             displayName: "Checkout Target Scan Repository"
 
@@ -104,7 +106,7 @@ stages:
             workingDirectory: $(scanningRepositoryPath)/scanning
 
           - script: |
-              LATEST_COMMIT_ID=$(cat latest_commit_id.txt)
+              LATEST_COMMIT_ID=$(cat $(latestCommitIdFile))
               pipenv run python src/semgrep_scan.py
             displayName: "Run Semgrep Scan"
             workingDirectory: $(scanningRepositoryPath)/scanning
