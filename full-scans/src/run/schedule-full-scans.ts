@@ -14,7 +14,7 @@ const devOpsClient = new DevOpsClient(adoOrgUrl, adoToken);
 const run = async () => {
   const fullScanSchedule = await getFullScanSchedule();
   const startIntervalUTCMilliseconds = getStartIntervalUTCMilliseconds(
-    scheduleConsumer.intervalInMinutes
+    scheduleConsumer.intervalInMinutes,
   );
   const endIntervalUTCMilliseconds =
     startIntervalUTCMilliseconds + 60_000 * scheduleConsumer.intervalInMinutes;
@@ -37,18 +37,20 @@ const run = async () => {
   };
   if (batch.length === 0) {
     console.log(
-      `No repositories scheduled between ${fullScanResults.startIntervalUTC} and ${fullScanResults.endIntervalUTC}. Exiting.`
+      `No repositories scheduled between ${fullScanResults.startIntervalUTC} and ${fullScanResults.endIntervalUTC}. Exiting.`,
     );
     await writeFullScanResults(fullScanResults);
     return;
   }
 
   for (const repository of batch) {
-    console.log(`Attempting to schedule full scan for ${repository.name}`);
+    console.log(
+      `Attempting to schedule full scan for ${repository.name} of ${repository.adoProject.name}`,
+    );
     const scheduleResult = await devOpsClient.runPipeline(
       repository,
       scheduleConsumer.scanPipelineProjectId,
-      scheduleConsumer.scanPipelineId
+      scheduleConsumer.scanPipelineId,
     );
     fullScanResults.results.push({
       repositoryId: repository.id,
@@ -73,7 +75,7 @@ const getStartIntervalUTCMilliseconds = (intervalMinutes: number): number => {
 const getFullScanSchedule = async () => {
   const adoConfigStr = await fs.readFile(
     scheduleConsumer.fullScanSchedulePath,
-    "utf-8"
+    "utf-8",
   );
   const adoConfig = yaml.parse(adoConfigStr) as FullScanSchedule;
   return adoConfig;
@@ -82,7 +84,7 @@ const getFullScanSchedule = async () => {
 const writeFullScanResults = async (fullScanResults: FullScanResults) => {
   await fs.writeFile(
     scheduleConsumer.fullScanResultsOutputPath,
-    yaml.stringify(fullScanResults)
+    yaml.stringify(fullScanResults),
   );
 };
 
