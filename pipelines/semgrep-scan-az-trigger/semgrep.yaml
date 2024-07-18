@@ -56,7 +56,7 @@ stages:
             path: $(scanningRepositoryName)
 
           - script: |
-              mkdir -p $(scanTargetPath) && cd $(scanTargetPath)
+              mkdir -p "$(scanTargetPath)" && cd "$(scanTargetPath)"
               git init
               git remote add origin ${{ parameters.repositoryRemoteUrl }}
               git config gc.auto 0
