@@ -1,13 +1,12 @@
 import subprocess
 import os
 
-from config.settings import DEFAULT_JOB_COUNT, DEFAULT_MAX_MEMORY, SemgrepDiffScanConfig, SemgrepFullScanConfig
+from config.settings import DEFAULT_JOB_COUNT, DEFAULT_MAX_MEMORY, ScanType, SemgrepDiffScanConfig, SemgrepFullScanConfig
 
 semgrep_diff_scan_config = SemgrepDiffScanConfig()
-semgrep_full_scan_config = SemgrepFullScanConfig()
-def run_command(command, scan_target_path, scan_type):
+def run_command(command, scan_target_path, scan_type, semgrep_full_scan_config):
     # Start the subprocess
-    if scan_type == 1:
+    if scan_type == ScanType.FULL:
         # Start with a copy of the current environment
         custom_env = os.environ.copy()
 
@@ -61,10 +60,11 @@ def diff_scan():
         semgrep_commit=semgrep_diff_scan_config.last_merge_commit_id,
         output_directory=semgrep_diff_scan_config.output_directory
     )
-    semgrep_return_code = run_command(ci_command, semgrep_diff_scan_config.scan_target_path, 0)
+    semgrep_return_code = run_command(ci_command, semgrep_diff_scan_config.scan_target_path, ScanType.DIFF, None)
     return semgrep_return_code
 
 def full_scan():
+    semgrep_full_scan_config = SemgrepFullScanConfig()
     print(f"Running FULL scan.")
     ci_command = """
         {semgrep_command}
@@ -72,11 +72,11 @@ def full_scan():
         semgrep_command=_get_full_scan_command(semgrep_full_scan_config.output_directory)
     )
 
-    semgrep_return_code = run_command(ci_command, semgrep_full_scan_config.scan_target_path, 1)
+    semgrep_return_code = run_command(ci_command, semgrep_full_scan_config.scan_target_path, ScanType.FULL, semgrep_full_scan_config)
     return semgrep_return_code
 
-def _get_full_scan_command(output_dir):
-    semgrep_command = f"semgrep ci --json -o {output_dir}/semgrep-results.json"
+def _get_full_scan_command(semgrep_full_scan_config):
+    semgrep_command = f"semgrep ci --json -o {semgrep_full_scan_config.output_dir}/semgrep-results.json"
     if (semgrep_full_scan_config.jobs != DEFAULT_JOB_COUNT):
         semgrep_command += f" --jobs {semgrep_full_scan_config.jobs}"
     if (semgrep_full_scan_config.max_memory != DEFAULT_MAX_MEMORY):

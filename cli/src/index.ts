@@ -9,15 +9,15 @@ program
   .description("Semgrep Azure DevOps CLI")
   .requiredOption(
     "-u, --ado-org-url <ado-org-url>",
-    "Azure DevOps organization URL"
+    "Azure DevOps organization URL",
   )
   .requiredOption(
     "-p, --ado-project <ado-project>",
-    "Azure DevOps project name"
+    "Azure DevOps project name",
   )
   .requiredOption(
     "-t, --ado-token <ado-token>",
-    "Azure DevOps Personal Access Token"
+    "Azure DevOps Personal Access Token",
   );
 
 const webhooksCommand = program
@@ -31,11 +31,11 @@ webhooksCommand
     const globalOpts = cmd.optsWithGlobals();
     const webhookCommand = new WebhookCommands(
       globalOpts.adoOrgUrl,
-      globalOpts.adoToken
+      globalOpts.adoToken,
     );
     try {
       const subscriptions = await webhookCommand.listWebhooks(
-        globalOpts.adoProject
+        globalOpts.adoProject,
       );
       console.log(JSON.stringify(subscriptions));
     } catch (error) {
@@ -48,30 +48,30 @@ webhooksCommand
   .description("Create a new webhook in an Azure DevOps project.")
   .requiredOption(
     "--webhook-url <webhook-url>",
-    "URL for the webhook to post events to."
+    "URL for the webhook to post events to.",
   )
   .option(
     "--function-app-token <token>",
-    "Function App token for authentication."
+    "Function App token for authentication.",
   )
   .addOption(
     new Option(
       "--event-type <event-type>",
-      "Event type for the webhook"
-    ).choices(["git.pullrequest.created", "git.pullrequest.updated"])
+      "Event type for the webhook",
+    ).choices(["git.pullrequest.created", "git.pullrequest.updated"]),
   )
   .action(async (_, cmd) => {
     const globalOpts = cmd.optsWithGlobals();
     const webhookCommand = new WebhookCommands(
       globalOpts.adoOrgUrl,
-      globalOpts.adoToken
+      globalOpts.adoToken,
     );
     try {
       await webhookCommand.createWebhook(
         globalOpts.adoProject,
         globalOpts.eventType,
         globalOpts.webhookUrl,
-        globalOpts.functionAppToken
+        globalOpts.functionAppToken,
       );
     } catch (error) {
       cmd.error("fatal. an error occurred while creating a webhook.");
@@ -91,13 +91,13 @@ webhooksCommand
         if (trimmedId?.length > 0) ids.push(trimmedId);
       });
       return ids;
-    }
+    },
   )
   .action(async (_, cmd) => {
     const globalOpts = cmd.optsWithGlobals();
     const webhookCommand = new WebhookCommands(
       globalOpts.adoOrgUrl,
-      globalOpts.adoToken
+      globalOpts.adoToken,
     );
     try {
       await webhookCommand.deleteWebhook(globalOpts.subscriptionId);
@@ -105,6 +105,18 @@ webhooksCommand
       cmd.error("fatal. an error occurred while delete the webhook.");
     }
   });
+
+webhooksCommand
+  .command("manage")
+  .description("Check webhooks on all the projects and update if needed.")
+  .requiredOption(
+    "--webhook-url <webhook-url>",
+    "URL for the webhook to post events to.",
+  )
+  .option(
+    "--function-app-token <token>",
+    "Function App token for authentication.",
+  );
 
 program.parse(process.argv);
 if (!process.argv.slice(2).length) {

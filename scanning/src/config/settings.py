@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings
+from enum import Enum
 
 DEFAULT_JOB_COUNT = -1
 DEFAULT_MAX_MEMORY = -1
@@ -43,3 +44,7 @@ class SemgrepFullScanConfig(SemgrepScanConfig):
     semgrep_supply_chain: bool = True
     source_ref_name : str
     latest_commit_id: str
+
+class ScanType(Enum):
+    FULL = 1
+    DIFF = 2
